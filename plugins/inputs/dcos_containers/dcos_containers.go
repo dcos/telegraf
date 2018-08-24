@@ -27,6 +27,50 @@ func (dc *DCOSContainers) Description() string {
 // It is invoked on a schedule (default every 10s) by the telegraf runtime.
 func (dc *DCOSContainers) Gather(acc telegraf.Accumulator) error {
 	// TODO
+	return nil
+}
+
+// getContainers requests a list of containers from the operator API
+func (dc *DCOSContainers) getContainers(ctx context.Context, cli calls.Sender) (*agent.Response_GetContainers, error) {
+	resp, err := cli.Send(ctx, calls.NonStreaming(calls.GetContainers()))
+	if err != nil {
+		return nil, err
+	}
+	r, err := processResponse(resp, agent.Response_GET_CONTAINERS)
+	if err != nil {
+		return nil, err
+	}
+
+	gc := r.GetGetContainers()
+	if gc == nil {
+		return gc, errors.New("the getContainers response from the mesos agent was empty")
+	}
+
+	return gc, nil
+}
+
+// processResponse reads the response from a triggered request, verifies its
+// type, and returns an agent response
+func processResponse(resp mesos.Response, t agent.Response_Type) (agent.Response, error) {
+	var r agent.Response
+	defer func() {
+		if resp != nil {
+			resp.Close()
+		}
+	}()
+	for {
+		if err := resp.Decode(&r); err != nil {
+			if err == io.EOF {
+				break
+			}
+			return r, err
+		}
+	}
+	if r.GetType() == t {
+		return r, nil
+	} else {
+		return r, fmt.Errorf("processResponse expected type %q, got %q", t, r.GetType())
+	}
 }
 
 // init is called once when telegraf starts
