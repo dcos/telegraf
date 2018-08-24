@@ -44,3 +44,17 @@ func TestGather(t *testing.T) {
 		})
 	}
 }
+
+// assertHasTimestamp checks that the specified measurement has the expected ts
+func assertHasTimestamp(t *testing.T, acc testutil.Accumulator, measurement string, ts int64) {
+	expected := time.Unix(ts, 0)
+	if acc.HasTimestamp(measurement, expected) {
+		return
+	}
+	if m, ok := acc.Get(measurement); ok {
+		actual := m.Time
+		t.Errorf("%s had a bad timestamp: expected %q; got %q", measurement, expected, actual)
+		return
+	}
+	t.Errorf("%s could not be retrieved while attempting to assert it had timestamp", measurement)
+}
