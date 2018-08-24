@@ -102,6 +102,34 @@ func processResponse(resp mesos.Response, t agent.Response_Type) (agent.Response
 	}
 }
 
+// setIfNotNil runs get() and adds its value to a map, if not nil
+func setIfNotNil(target map[string]interface{}, key string, get interface{}) error {
+	var val interface{}
+	var zero interface{}
+
+	switch get.(type) {
+	case func() uint32:
+		val = get.(func() uint32)()
+		zero = uint32(0)
+		break
+	case func() uint64:
+		val = get.(func() uint64)()
+		zero = uint64(0)
+		break
+	case func() float64:
+		val = get.(func() float64)()
+		zero = float64(0)
+		break
+	default:
+		return fmt.Errorf("get function for key %s was not of a recognized type", key)
+	}
+	// Zero is nil for numeric types
+	if val != zero {
+		target[key] = val
+	}
+	return nil
+}
+
 // init is called once when telegraf starts
 func init() {
 	inputs.Add("dcos_containers", func() telegraf.Input {
