@@ -23,6 +23,30 @@ var (
 			tags:         map[string]string{},
 			ts:           0,
 		},
+		testCase{
+			fixture: "normal",
+			measurements: map[string]map[string]interface{}{
+				"cpus": map[string]interface{}{
+					"limit":               8.25,
+					"nr_periods":          uint32(769021),
+					"nr_throttled":        uint32(1046),
+					"system_time_secs":    34501.45,
+					"throttled_time_secs": 352.597023453,
+					"user_time_secs":      96348.84,
+				},
+				"mem": map[string]interface{}{
+					"anon_bytes":        uint64(4845449216),
+					"file_bytes":        uint64(260165632),
+					"limit_bytes":       uint64(7650410496),
+					"mapped_file_bytes": uint64(7159808),
+					"rss_bytes":         uint64(5105614848),
+				},
+			},
+			tags: map[string]string{
+				"container_id": "abc123",
+			},
+			ts: 1388534400,
+		},
 	}
 )
 
