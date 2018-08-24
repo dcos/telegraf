@@ -13,6 +13,35 @@ type DCOSContainers struct {
 	Timeout       time.Duration
 }
 
+// measurement is a combination of fields and tags specific to those fields
+type measurement struct {
+	name   string
+	fields map[string]interface{}
+	tags   map[string]string
+}
+
+// combineTags combines this measurement's tags with some other tags. In the
+// event of a collision, this measurement's tags take priority.
+func (m *measurement) combineTags(newTags map[string]string) map[string]string {
+	results := make(map[string]string)
+	for k, v := range newTags {
+		results[k] = v
+	}
+	for k, v := range m.tags {
+		results[k] = v
+	}
+	return results
+}
+
+// newMeasurement is a convenience method for instantiating new measurements
+func newMeasurement(name string) measurement {
+	return measurement{
+		name:   name,
+		fields: make(map[string]interface{}),
+		tags:   make(map[string]string),
+	}
+}
+
 // SampleConfig returns the default configuration
 func (dc *DCOSContainers) SampleConfig() string {
 	return sampleConfig
