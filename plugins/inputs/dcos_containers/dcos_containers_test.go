@@ -41,6 +41,22 @@ func TestGather(t *testing.T) {
 
 			err := acc.GatherError(dc.Gather)
 			assert.Nil(t, err)
+			if len(tc.measurements) > 0 {
+				for m, fields := range tc.measurements {
+					// all expected fields are present
+					acc.AssertContainsFields(t, m, fields)
+					// all expected tags are present
+					acc.AssertContainsTaggedFields(t, m, fields, tc.tags)
+					// the expected timestamp is present
+					assertHasTimestamp(t, acc, m, tc.ts)
+				}
+			} else {
+				acc.AssertDoesNotContainMeasurement(t, "containers")
+				acc.AssertDoesNotContainMeasurement(t, "cpus")
+				acc.AssertDoesNotContainMeasurement(t, "mem")
+				acc.AssertDoesNotContainMeasurement(t, "disk")
+				acc.AssertDoesNotContainMeasurement(t, "net")
+			}
 		})
 	}
 }
