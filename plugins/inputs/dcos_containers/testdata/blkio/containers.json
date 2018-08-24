@@ -1,0 +1,145 @@
+{
+  "type": "GET_CONTAINERS",
+  "get_containers": {
+    "containers": [
+      {
+        "container_id": {
+          "value": "abc123"
+        },
+        "framework_id": {
+          "value": "framework.id"
+        },
+        "executor_id": {
+          "value": "executor.id"
+        },
+        "executor_name": "executor",
+        "resource_statistics": {
+          "cpus_limit": 8.25,
+          "cpus_nr_periods": 769021,
+          "cpus_nr_throttled": 1046,
+          "cpus_system_time_secs": 34501.45,
+          "cpus_throttled_time_secs": 352.597023453,
+          "cpus_user_time_secs": 96348.84,
+          "mem_anon_bytes": 4845449216,
+          "mem_file_bytes": 260165632,
+          "mem_limit_bytes": 7650410496,
+          "mem_mapped_file_bytes": 7159808,
+          "mem_rss_bytes": 5105614848,
+          "timestamp": 1388534400,
+          "disk_statistics": [
+            {
+              "persistence": {
+                "id": "blkio#vol#7fac4205-a714-11e8-a05e-fa1a5b5940b8",
+                "principal": "dcos_marathon"
+              },
+              "limit_bytes": 1073741824,
+              "used_bytes": 4096
+            }
+          ],
+          "blkio_statistics": {
+            "cfq": [
+              {
+                "io_serviced": [
+                  {
+                    "op": "TOTAL",
+                    "value": 1
+                  }
+                ],
+                "io_service_bytes": [
+                  {
+                    "op": "TOTAL",
+                    "value": 2
+                  }
+                ],
+                "io_service_time": [
+                  {
+                    "op": "TOTAL",
+                    "value": 3
+                  }
+                ],
+                "io_wait_time": [
+                  {
+                    "op": "TOTAL",
+                    "value": 4
+                  }
+                ],
+                "io_merged": [
+                  {
+                    "op": "TOTAL",
+                    "value": 5
+                  }
+                ],
+                "io_queued": [
+                  {
+                    "op": "TOTAL",
+                    "value": 6
+                  }
+                ]
+              }
+            ],
+            "cfq_recursive": [
+              {
+                "io_serviced": [
+                  {
+                    "op": "TOTAL",
+                    "value": 0
+                  }
+                ],
+                "io_service_bytes": [
+                  {
+                    "op": "TOTAL",
+                    "value": 0
+                  }
+                ],
+                "io_service_time": [
+                  {
+                    "op": "TOTAL",
+                    "value": 0
+                  }
+                ],
+                "io_wait_time": [
+                  {
+                    "op": "TOTAL",
+                    "value": 0
+                  }
+                ],
+                "io_merged": [
+                  {
+                    "op": "TOTAL",
+                    "value": 0
+                  }
+                ],
+                "io_queued": [
+                  {
+                    "op": "TOTAL",
+                    "value": 0
+                  }
+                ]
+              }
+            ],
+            "throttling": [
+              {
+                "io_serviced": [
+                  {
+                    "op": "TOTAL",
+                    "value": 0
+                  }
+                ],
+                "io_service_bytes": [
+                  {
+                    "op": "TOTAL",
+                    "value": 0
+                  }
+                ]
+              }
+            ]
+          },
+          "perf": {
+            "timestamp": 1535056712.427976,
+            "duration": 0
+          }
+        }
+      }
+    ]
+  }
+}

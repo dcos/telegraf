@@ -47,6 +47,25 @@ var (
 			},
 			ts: 1388534400,
 		},
+		testCase{
+			fixture: "blkio",
+			measurements: map[string]map[string]interface{}{
+				"blkio": map[string]interface{}{
+					"io_serviced":      uint64(1),
+					"io_service_bytes": uint64(2),
+					"io_service_time":  uint64(3),
+					"io_wait_time":     uint64(4),
+					"io_merged":        uint64(5),
+					"io_queued":        uint64(6),
+				},
+			},
+			tags: map[string]string{
+				"container_id": "abc123",
+				"device":       "default",
+				"policy":       "cfq",
+			},
+			ts: 1388534400,
+		},
 	}
 )
 
