@@ -14,7 +14,7 @@ generate it using `telegraf --usage dcos_containers`.
   ## The URL of the mesos agent
   mesos_agent_url = "http://localhost:5051"
   ## The period after which requests to mesos agent should time out
-  timeout = 10s
+  timeout = "10s"
 ```
 
 ### Metrics:

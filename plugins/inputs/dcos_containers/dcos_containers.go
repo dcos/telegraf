@@ -23,7 +23,7 @@ const sampleConfig = `
 ## The URL of the local mesos agent
 mesos_agent_url = "http://$NODE_PRIVATE_IP:5051"
 ## The period after which requests to mesos agent should time out
-timeout = 10s
+timeout = "10s"
 `
 
 // DCOSContainers describes the options available to this plugin
