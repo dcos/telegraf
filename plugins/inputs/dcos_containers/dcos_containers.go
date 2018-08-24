@@ -186,6 +186,10 @@ func cMeasurements(c agent.Response_GetContainers_Container) []measurement {
 
 	// TODO (philipnrmn) *rs.DiskStatistics for per-volume stats
 
+	if bs := rs.GetBlkioStatistics(); bs != nil {
+		results = append(results, cBlkioMeasurements(*bs)...)
+	}
+
 	// TODO (philipnrmn) *rs.Perf for perf stats
 
 	warnIfNotSet(setIfNotNil(net.fields, "rx_packets", rs.GetNetRxPackets))
@@ -208,6 +212,46 @@ func cMeasurements(c agent.Response_GetContainers_Container) []measurement {
 	return results
 }
 
+// cBlkioMeasurement flattens the deeply nested blkio statistics struct into
+// a set of measurements, tagged by device ID and blkio policy
+func cBlkioMeasurements(bs mesos.CgroupInfo_Blkio_Statistics) []measurement {
+	var results []measurement
+
+	for _, cfq := range bs.GetCFQ() {
+		blkio := newMeasurement("blkio")
+		blkio.tags["policy"] = "cfq"
+		if dev := cfq.GetDevice(); dev != nil {
+			blkio.tags["device"] = fmt.Sprintf("%d.%d", dev.GetMajorNumber(), dev.GetMinorNumber())
+		} else {
+			blkio.tags["device"] = "default"
+		}
+		warnIfNotSet(setIfNotNil(blkio.fields, "io_serviced", blkioTotalGetter(cfq.GetIOServiced)))
+		warnIfNotSet(setIfNotNil(blkio.fields, "io_service_bytes", blkioTotalGetter(cfq.GetIOServiceBytes)))
+		warnIfNotSet(setIfNotNil(blkio.fields, "io_service_time", blkioTotalGetter(cfq.GetIOServiceTime)))
+		warnIfNotSet(setIfNotNil(blkio.fields, "io_wait_time", blkioTotalGetter(cfq.GetIOWaitTime)))
+		warnIfNotSet(setIfNotNil(blkio.fields, "io_merged", blkioTotalGetter(cfq.GetIOMerged)))
+		warnIfNotSet(setIfNotNil(blkio.fields, "io_queued", blkioTotalGetter(cfq.GetIOQueued)))
+
+		results = append(results, blkio)
+	}
+
+	return results
+}
+
+// blkioTotalGetter is a convenience method allowing us to unpick the nested
+// blkio_value object. It returns a method which when invoked, returns the
+// value of the total of the field returned by its parameter function
+func blkioTotalGetter(f func() []mesos.CgroupInfo_Blkio_Value) func() uint64 {
+	return func() uint64 {
+		for _, v := range f() {
+			// TODO (philipnrmn) consider returning all operations, not just total
+			if v.GetOp() == mesos.CgroupInfo_Blkio_TOTAL {
+				return v.GetValue()
+			}
+		}
+		return 0
+	}
+}
 
 // cTags extracts relevant metadata from a Container object as a map of tags
 func cTags(c agent.Response_GetContainers_Container) map[string]string {
