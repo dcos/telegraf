@@ -1,5 +1,24 @@
 package dcos_containers
 
+import (
+	"context"
+	"errors"
+	"fmt"
+	"io"
+	"log"
+	"math"
+	"time"
+
+	"github.com/influxdata/telegraf"
+	"github.com/influxdata/telegraf/plugins/inputs"
+
+	"github.com/mesos/mesos-go/api/v1/lib"
+	"github.com/mesos/mesos-go/api/v1/lib/agent"
+	"github.com/mesos/mesos-go/api/v1/lib/agent/calls"
+	"github.com/mesos/mesos-go/api/v1/lib/httpcli"
+	"github.com/mesos/mesos-go/api/v1/lib/httpcli/httpagent"
+)
+
 const sampleConfig = `
 ## The URL of the local mesos agent
 mesos_agent_url = "http://$NODE_PRIVATE_IP:5051"
@@ -55,7 +74,25 @@ func (dc *DCOSContainers) Description() string {
 // Gather takes in an accumulator and adds the metrics that the plugin gathers.
 // It is invoked on a schedule (default every 10s) by the telegraf runtime.
 func (dc *DCOSContainers) Gather(acc telegraf.Accumulator) error {
-	// TODO
+	uri := dc.MesosAgentUrl + "/api/v1"
+	cli := httpagent.NewSender(httpcli.New(httpcli.Endpoint(uri)).Send)
+	ctx, _ := context.WithTimeout(context.Background(), dc.Timeout)
+
+	gc, err := dc.getContainers(ctx, cli)
+	if err != nil {
+		return err
+	}
+
+	for _, c := range gc.Containers {
+		ts := cTS(c)
+		tags := cTags(c)
+		for _, m := range cMeasurements(c) {
+			if len(m.fields) > 0 {
+				acc.AddFields(m.name, m.fields, m.combineTags(tags), ts)
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -102,6 +139,87 @@ func processResponse(resp mesos.Response, t agent.Response_Type) (agent.Response
 	}
 }
 
+// cMeasurements flattens a Container object into a slice of measurements with
+// fields and tags
+func cMeasurements(c agent.Response_GetContainers_Container) []measurement {
+	container := newMeasurement("container")
+	cpus := newMeasurement("cpus")
+	mem := newMeasurement("mem")
+	disk := newMeasurement("disk")
+	net := newMeasurement("net")
+
+	results := []measurement{
+		container, cpus, mem, disk, net,
+	}
+
+	rs := c.ResourceStatistics
+
+	// These items are not in alphabetical order; instead we preserve the order
+	// in the source of the ResourceStatistics struct to make it easy to update.
+	warnIfNotSet(setIfNotNil(container.fields, "processes", rs.GetProcesses))
+	warnIfNotSet(setIfNotNil(container.fields, "threads", rs.GetThreads))
+
+	warnIfNotSet(setIfNotNil(cpus.fields, "user_time_secs", rs.GetCPUsUserTimeSecs))
+	warnIfNotSet(setIfNotNil(cpus.fields, "system_time_secs", rs.GetCPUsSystemTimeSecs))
+	warnIfNotSet(setIfNotNil(cpus.fields, "limit", rs.GetCPUsLimit))
+	warnIfNotSet(setIfNotNil(cpus.fields, "nr_periods", rs.GetCPUsNrPeriods))
+	warnIfNotSet(setIfNotNil(cpus.fields, "nr_throttled", rs.GetCPUsNrThrottled))
+	warnIfNotSet(setIfNotNil(cpus.fields, "throttled_time_secs", rs.GetCPUsThrottledTimeSecs))
+
+	warnIfNotSet(setIfNotNil(mem.fields, "total_bytes", rs.GetMemTotalBytes))
+	warnIfNotSet(setIfNotNil(mem.fields, "total_memsw_bytes", rs.GetMemTotalMemswBytes))
+	warnIfNotSet(setIfNotNil(mem.fields, "limit_bytes", rs.GetMemLimitBytes))
+	warnIfNotSet(setIfNotNil(mem.fields, "soft_limit_bytes", rs.GetMemSoftLimitBytes))
+	warnIfNotSet(setIfNotNil(mem.fields, "file_bytes", rs.GetMemFileBytes))
+	warnIfNotSet(setIfNotNil(mem.fields, "anon_bytes", rs.GetMemAnonBytes))
+	warnIfNotSet(setIfNotNil(mem.fields, "cache_bytes", rs.GetMemCacheBytes))
+	warnIfNotSet(setIfNotNil(mem.fields, "rss_bytes", rs.GetMemRSSBytes))
+	warnIfNotSet(setIfNotNil(mem.fields, "mapped_file_bytes", rs.GetMemMappedFileBytes))
+	warnIfNotSet(setIfNotNil(mem.fields, "swap_bytes", rs.GetMemSwapBytes))
+	warnIfNotSet(setIfNotNil(mem.fields, "unevictable_bytes", rs.GetMemUnevictableBytes))
+	warnIfNotSet(setIfNotNil(mem.fields, "low_pressure_counter", rs.GetMemLowPressureCounter))
+	warnIfNotSet(setIfNotNil(mem.fields, "medium_pressure_counter", rs.GetMemMediumPressureCounter))
+	warnIfNotSet(setIfNotNil(mem.fields, "critical_pressure_counter", rs.GetMemCriticalPressureCounter))
+
+	warnIfNotSet(setIfNotNil(disk.fields, "limit_bytes", rs.GetDiskLimitBytes))
+	warnIfNotSet(setIfNotNil(disk.fields, "used_bytes", rs.GetDiskUsedBytes))
+
+	// TODO (philipnrmn) *rs.DiskStatistics for per-volume stats
+
+	// TODO (philipnrmn) *rs.Perf for perf stats
+
+	warnIfNotSet(setIfNotNil(net.fields, "rx_packets", rs.GetNetRxPackets))
+	warnIfNotSet(setIfNotNil(net.fields, "rx_bytes", rs.GetNetRxBytes))
+	warnIfNotSet(setIfNotNil(net.fields, "rx_errors", rs.GetNetRxErrors))
+	warnIfNotSet(setIfNotNil(net.fields, "rx_dropped", rs.GetNetRxDropped))
+	warnIfNotSet(setIfNotNil(net.fields, "tx_packets", rs.GetNetTxPackets))
+	warnIfNotSet(setIfNotNil(net.fields, "tx_bytes", rs.GetNetTxBytes))
+	warnIfNotSet(setIfNotNil(net.fields, "tx_errors", rs.GetNetTxErrors))
+	warnIfNotSet(setIfNotNil(net.fields, "tx_dropped", rs.GetNetTxDropped))
+	warnIfNotSet(setIfNotNil(net.fields, "tcp_rtt_microsecs_p50", rs.GetNetTCPRttMicrosecsP50))
+	warnIfNotSet(setIfNotNil(net.fields, "tcp_rtt_microsecs_p90", rs.GetNetTCPRttMicrosecsP90))
+	warnIfNotSet(setIfNotNil(net.fields, "tcp_rtt_microsecs_p95", rs.GetNetTCPRttMicrosecsP95))
+	warnIfNotSet(setIfNotNil(net.fields, "tcp_rtt_microsecs_p99", rs.GetNetTCPRttMicrosecsP99))
+	warnIfNotSet(setIfNotNil(net.fields, "tcp_active_connections", rs.GetNetTCPActiveConnections))
+	warnIfNotSet(setIfNotNil(net.fields, "tcp_time_wait_connections", rs.GetNetTCPTimeWaitConnections))
+	// TODO (philipnrmn) *rs.NetTrafficControlStatistics  for net traffic control statistics
+	// TODO (philipnrmn) *rs.NetSNMPStatistics for net snmp statistics
+
+	return results
+}
+
+
+// cTags extracts relevant metadata from a Container object as a map of tags
+func cTags(c agent.Response_GetContainers_Container) map[string]string {
+	return map[string]string{"container_id": c.ContainerID.Value}
+}
+
+// cTS retrieves the timestamp from a Container object as a time rounded to the
+// nearest second
+func cTS(c agent.Response_GetContainers_Container) time.Time {
+	return time.Unix(int64(math.Trunc(c.ResourceStatistics.Timestamp)), 0)
+}
+
 // setIfNotNil runs get() and adds its value to a map, if not nil
 func setIfNotNil(target map[string]interface{}, key string, get interface{}) error {
 	var val interface{}
@@ -128,6 +246,14 @@ func setIfNotNil(target map[string]interface{}, key string, get interface{}) err
 		target[key] = val
 	}
 	return nil
+}
+
+// warnIfNotSet is a convenience method to log a warning whenever setIfNotNil
+// did not succesfully complete
+func warnIfNotSet(err error) {
+	if err != nil {
+		log.Printf("Warning: %s", err)
+	}
 }
 
 // init is called once when telegraf starts
