@@ -74,8 +74,8 @@ func TestGather(t *testing.T) {
 		t.Run(tc.fixture, func(t *testing.T) {
 			var acc testutil.Accumulator
 
-			server, teardown := startTestServer(t, tc.fixture)
-			defer teardown()
+			server := startTestServer(t, tc.fixture)
+			defer server.Close()
 
 			dc := DCOSContainers{
 				MesosAgentUrl: server.URL,
