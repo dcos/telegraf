@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/influxdata/telegraf/internal"
 	"github.com/influxdata/telegraf/testutil"
 	"github.com/stretchr/testify/assert"
 )
@@ -79,7 +80,7 @@ func TestGather(t *testing.T) {
 
 			dc := DCOSContainers{
 				MesosAgentUrl: server.URL,
-				Timeout:       10 * time.Millisecond,
+				Timeout:       internal.Duration{Duration: 10 * time.Millisecond},
 			}
 
 			err := acc.GatherError(dc.Gather)

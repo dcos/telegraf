@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/influxdata/telegraf"
+	"github.com/influxdata/telegraf/internal"
 	"github.com/influxdata/telegraf/plugins/inputs"
 
 	"github.com/mesos/mesos-go/api/v1/lib"
@@ -29,7 +30,7 @@ timeout = "10s"
 // DCOSContainers describes the options available to this plugin
 type DCOSContainers struct {
 	MesosAgentUrl string
-	Timeout       time.Duration
+	Timeout       internal.Duration
 }
 
 // measurement is a combination of fields and tags specific to those fields
@@ -76,7 +77,7 @@ func (dc *DCOSContainers) Description() string {
 func (dc *DCOSContainers) Gather(acc telegraf.Accumulator) error {
 	uri := dc.MesosAgentUrl + "/api/v1"
 	cli := httpagent.NewSender(httpcli.New(httpcli.Endpoint(uri)).Send)
-	ctx, _ := context.WithTimeout(context.Background(), dc.Timeout)
+	ctx, _ := context.WithTimeout(context.Background(), dc.Timeout.Duration)
 
 	gc, err := dc.getContainers(ctx, cli)
 	if err != nil {
@@ -314,7 +315,7 @@ func warnIfNotSet(err error) {
 func init() {
 	inputs.Add("dcos_containers", func() telegraf.Input {
 		return &DCOSContainers{
-			Timeout: 10 * time.Second,
+			Timeout: internal.Duration{Duration: 10 * time.Second},
 		}
 	})
 }
