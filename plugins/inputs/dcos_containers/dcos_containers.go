@@ -84,11 +84,15 @@ func (dc *DCOSContainers) Gather(acc telegraf.Accumulator) error {
 	}
 
 	for _, c := range gc.Containers {
-		ts := cTS(c)
+		ts, tsOK := cTS(c)
 		tags := cTags(c)
 		for _, m := range cMeasurements(c) {
 			if len(m.fields) > 0 {
-				acc.AddFields(m.name, m.fields, m.combineTags(tags), ts)
+				if tsOK {
+					acc.AddFields(m.name, m.fields, m.combineTags(tags), ts)
+				} else {
+					acc.AddFields(m.name, m.fields, m.combineTags(tags))
+				}
 			}
 		}
 	}
@@ -148,11 +152,14 @@ func cMeasurements(c agent.Response_GetContainers_Container) []measurement {
 	disk := newMeasurement("disk")
 	net := newMeasurement("net")
 
+	rs := c.GetResourceStatistics()
+	if rs == nil {
+		return []measurement{}
+	}
+
 	results := []measurement{
 		container, cpus, mem, disk, net,
 	}
-
-	rs := c.ResourceStatistics
 
 	// These items are not in alphabetical order; instead we preserve the order
 	// in the source of the ResourceStatistics struct to make it easy to update.
@@ -259,9 +266,12 @@ func cTags(c agent.Response_GetContainers_Container) map[string]string {
 }
 
 // cTS retrieves the timestamp from a Container object as a time rounded to the
-// nearest second
-func cTS(c agent.Response_GetContainers_Container) time.Time {
-	return time.Unix(int64(math.Trunc(c.ResourceStatistics.Timestamp)), 0)
+// nearest second. If time is not available, we return now.
+func cTS(c agent.Response_GetContainers_Container) (time.Time, bool) {
+	if rs := c.GetResourceStatistics(); rs != nil {
+		return time.Unix(int64(math.Trunc(c.ResourceStatistics.Timestamp)), 0), true
+	}
+	return time.Now(), false
 }
 
 // setIfNotNil runs get() and adds its value to a map, if not nil
