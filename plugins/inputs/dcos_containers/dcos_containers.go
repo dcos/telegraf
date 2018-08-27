@@ -77,7 +77,8 @@ func (dc *DCOSContainers) Description() string {
 func (dc *DCOSContainers) Gather(acc telegraf.Accumulator) error {
 	uri := dc.MesosAgentUrl + "/api/v1"
 	cli := httpagent.NewSender(httpcli.New(httpcli.Endpoint(uri)).Send)
-	ctx, _ := context.WithTimeout(context.Background(), dc.Timeout.Duration)
+	ctx, cancel := context.WithTimeout(context.Background(), dc.Timeout.Duration)
+	defer cancel()
 
 	gc, err := dc.getContainers(ctx, cli)
 	if err != nil {

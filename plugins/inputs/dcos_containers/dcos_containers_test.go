@@ -92,7 +92,7 @@ func TestGather(t *testing.T) {
 					// all expected tags are present
 					acc.AssertContainsTaggedFields(t, m, fields, tc.tags)
 					// the expected timestamp is present
-					assertHasTimestamp(t, acc, m, tc.ts)
+					assertHasTimestamp(t, &acc, m, tc.ts)
 				}
 			} else {
 				acc.AssertDoesNotContainMeasurement(t, "containers")
@@ -155,7 +155,7 @@ func TestSetIfNotNil(t *testing.T) {
 }
 
 // assertHasTimestamp checks that the specified measurement has the expected ts
-func assertHasTimestamp(t *testing.T, acc testutil.Accumulator, measurement string, ts int64) {
+func assertHasTimestamp(t *testing.T, acc *testutil.Accumulator, measurement string, ts int64) {
 	expected := time.Unix(ts, 0)
 	if acc.HasTimestamp(measurement, expected) {
 		return
