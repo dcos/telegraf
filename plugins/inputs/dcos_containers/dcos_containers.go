@@ -306,7 +306,7 @@ func setIfNotNil(target map[string]interface{}, key string, get interface{}) err
 // did not succesfully complete
 func warnIfNotSet(err error) {
 	if err != nil {
-		log.Printf("Warning: %s", err)
+		log.Printf("I! %s", err)
 	}
 }
 
