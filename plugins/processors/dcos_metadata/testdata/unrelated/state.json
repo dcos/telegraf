@@ -1,0 +1,272 @@
+{
+    "type": "GET_STATE",
+    "get_state": {
+        "get_tasks": {
+            "launched_tasks": [
+                {
+                    "name": "task",
+                    "task_id": {
+                        "value": "task.id"
+                    },
+                    "framework_id": {
+                        "value": "framework.id"
+                    },
+                    "agent_id": {
+                        "value": "577637a3-cbf2-4f38-a227-578b0783eabf-S1"
+                    },
+                    "state": "TASK_RUNNING",
+                    "resources": [
+                        {
+                            "name": "cpus",
+                            "type": "SCALAR",
+                            "scalar": {
+                                "value": 0.1
+                            },
+                            "allocation_info": {
+                                "role": "slave_public"
+                            }
+                        },
+                        {
+                            "name": "mem",
+                            "type": "SCALAR",
+                            "scalar": {
+                                "value": 128
+                            },
+                            "allocation_info": {
+                                "role": "slave_public"
+                            }
+                        }
+                    ],
+                    "statuses": [
+                        {
+                            "task_id": {
+                                "value": "task.id"
+                            },
+                            "state": "TASK_STARTING",
+                            "source": "SOURCE_EXECUTOR",
+                            "agent_id": {
+                                "value": "577637a3-cbf2-4f38-a227-578b0783eabf-S1"
+                            },
+                            "executor_id": {
+                                "value": "executor.id"
+                            },
+                            "timestamp": 1531966390.65146,
+                            "uuid": "VhSyIEWERZ+TACh/C8069A==",
+                            "container_status": {
+                                "container_id": {
+                                    "value": "abc123"
+                                },
+                                "network_infos": [
+                                    {
+                                        "ip_addresses": [
+                                            {
+                                                "protocol": "IPv4",
+                                                "ip_address": "10.0.2.24"
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "executor_pid": 25860
+                            }
+                        },
+                        {
+                            "task_id": {
+                                "value": "task.id"
+                            },
+                            "state": "TASK_RUNNING",
+                            "source": "SOURCE_EXECUTOR",
+                            "agent_id": {
+                                "value": "577637a3-cbf2-4f38-a227-578b0783eabf-S1"
+                            },
+                            "executor_id": {
+                                "value": "executor.id"
+                            },
+                            "timestamp": 1531966390.65338,
+                            "uuid": "ty1hNWPjSimw2woXDwIKTw==",
+                            "container_status": {
+                                "container_id": {
+                                    "value": "abc123"
+                                },
+                                "network_infos": [
+                                    {
+                                        "ip_addresses": [
+                                            {
+                                                "protocol": "IPv4",
+                                                "ip_address": "10.0.2.24"
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "executor_pid": 25860
+                            }
+                        }
+                    ],
+                    "status_update_state": "TASK_RUNNING",
+                    "status_update_uuid": "ty1hNWPjSimw2woXDwIKTw==",
+                    "labels": {
+                        "labels": [
+                            {
+                                "key": "DCOS_SPACE",
+                                "value": "/task"
+                            }
+                        ]
+                    },
+                    "discovery": {
+                        "visibility": "FRAMEWORK",
+                        "name": "task",
+                        "ports": {}
+                    },
+                    "container": {
+                        "type": "MESOS",
+                        "mesos": {}
+                    }
+                }
+            ]
+        },
+        "get_executors": {
+            "executors": [
+                {
+                    "executor_info": {
+                        "executor_id": {
+                            "value": "executor.id"
+                        },
+                        "framework_id": {
+                            "value": "framework.id"
+                        },
+                        "command": {
+                            "environment": {
+                                "variables": [
+                                    {
+                                        "name": "MARATHON_APP_VERSION",
+                                        "type": "VALUE",
+                                        "value": "2018-07-19T02:13:09.025Z"
+                                    },
+                                    {
+                                        "name": "HOST",
+                                        "type": "VALUE",
+                                        "value": "10.0.2.24"
+                                    },
+                                    {
+                                        "name": "MARATHON_APP_RESOURCE_CPUS",
+                                        "type": "VALUE",
+                                        "value": "0.1"
+                                    },
+                                    {
+                                        "name": "MARATHON_APP_RESOURCE_GPUS",
+                                        "type": "VALUE",
+                                        "value": "0"
+                                    },
+                                    {
+                                        "name": "MESOS_TASK_ID",
+                                        "type": "VALUE",
+                                        "value": "task.484807ed-8af9-11e8-8d69-5ab0267d490f"
+                                    },
+                                    {
+                                        "name": "MARATHON_APP_RESOURCE_MEM",
+                                        "type": "VALUE",
+                                        "value": "128.0"
+                                    },
+                                    {
+                                        "name": "MARATHON_APP_RESOURCE_DISK",
+                                        "type": "VALUE",
+                                        "value": "0.0"
+                                    },
+                                    {
+                                        "name": "MARATHON_APP_LABELS",
+                                        "type": "VALUE",
+                                        "value": ""
+                                    },
+                                    {
+                                        "name": "MARATHON_APP_ID",
+                                        "type": "VALUE",
+                                        "value": "/task"
+                                    }
+                                ]
+                            },
+                            "shell": false,
+                            "value": "/opt/mesosphere/packages/mesos--258ff7e6a91ad9c198895e921a835a1061c43710/libexec/mesos/mesos-executor",
+                            "arguments": [
+                                "mesos-executor",
+                                "--launcher_dir=/opt/mesosphere/active/mesos/libexec/mesos"
+                            ]
+                        },
+                        "container": {
+                            "type": "MESOS",
+                            "mesos": {}
+                        },
+                        "resources": [
+                            {
+                                "name": "cpus",
+                                "type": "SCALAR",
+                                "scalar": {
+                                    "value": 0.1
+                                },
+                                "allocation_info": {
+                                    "role": "slave_public"
+                                }
+                            },
+                            {
+                                "name": "mem",
+                                "type": "SCALAR",
+                                "scalar": {
+                                    "value": 32
+                                },
+                                "allocation_info": {
+                                    "role": "slave_public"
+                                }
+                            }
+                        ],
+                        "name": "executor",
+                        "source": "task.484807ed-8af9-11e8-8d69-5ab0267d490f",
+                        "discovery": {
+                            "visibility": "FRAMEWORK",
+                            "name": "task",
+                            "ports": {}
+                        },
+                        "labels": {
+                            "labels": [
+                                {
+                                    "key": "DCOS_SPACE",
+                                    "value": "/task"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        "get_frameworks": {
+            "frameworks": [
+                {
+                    "framework_info": {
+                        "user": "root",
+                        "name": "framework",
+                        "id": {
+                            "value": "framework.id"
+                        },
+                        "failover_timeout": 604800,
+                        "checkpoint": true,
+                        "role": "slave_public",
+                        "hostname": "10.0.5.42",
+                        "principal": "dcos_marathon",
+                        "webui_url": "https://10.0.5.42:8443",
+                        "capabilities": [
+                            {
+                                "type": "TASK_KILLING_STATE"
+                            },
+                            {
+                                "type": "GPU_RESOURCES"
+                            },
+                            {
+                                "type": "PARTITION_AWARE"
+                            },
+                            {
+                                "type": "REGION_AWARE"
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    }
+}

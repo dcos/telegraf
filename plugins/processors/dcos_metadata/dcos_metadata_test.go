@@ -65,9 +65,27 @@ var (
 					map[string]string{"FOO": "bar", "BAZ": "qux"}},
 			},
 		},
+		// One metric without a container ID; nothing to do
+		testCase{
+			fixture: "unrelated",
+			inputs: []telegraf.Metric{
+				newMetric("test",
+					map[string]string{}, // no container_id tag
+					map[string]interface{}{"value": int64(1)},
+					time.Now(),
+				),
+			},
 			expected: []telegraf.Metric{
 				newMetric("test",
+					map[string]string{},
+					map[string]interface{}{"value": int64(1)},
+					time.Now(),
+				),
 			},
+			cachedContainers: map[string]containerInfo{},
+			// We do not expect the cache to be updated
+			containers: map[string]containerInfo{},
+		},
 			expected: []telegraf.Metric{
 				newMetric("test",
 					map[string]string{
