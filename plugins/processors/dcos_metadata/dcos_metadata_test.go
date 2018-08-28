@@ -43,17 +43,20 @@ var (
 				newMetric("test",
 					map[string]string{
 						"container_id": "abc123",
-						"task_name":    "task",
+						"service_name": "framework",
+						"task_name": "task",
 					},
 					map[string]interface{}{"value": int64(1)},
 					time.Now(),
 				),
 			},
 			cachedContainers: map[string]containerInfo{
-				"abc123": containerInfo{"abc123", "task"},
+				"abc123": containerInfo{"abc123", "task", "", "framework",
+					map[string]string{}},
 			},
 			containers: map[string]containerInfo{
-				"abc123": containerInfo{"abc123", "task"},
+				"abc123": containerInfo{"abc123", "task", "", "framework",
+					map[string]string{}},
 			},
 		},
 	}

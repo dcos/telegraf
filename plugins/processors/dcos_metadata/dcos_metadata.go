@@ -19,8 +19,11 @@ type DCOSMetadata struct {
 // containerInfo is a tuple of metadata which we use to map a container ID to
 // information about the task, executor and framework.
 type containerInfo struct {
-	containerID string
-	taskName    string
+	containerID   string
+	taskName      string
+	executorName  string
+	frameworkName string
+	taskLabels    map[string]string
 }
 
 const sampleConfig = `
@@ -48,6 +51,8 @@ func (dm *DCOSMetadata) Apply(in ...telegraf.Metric) []telegraf.Metric {
 		// Ignore metrics without container_id tag
 		if cid, ok := metric.Tags()["container_id"]; ok {
 			if c, ok := dm.containers[cid]; ok {
+				metric.AddTag("service_name", c.frameworkName)
+					metric.AddTag("executor_name", c.executorName)
 				metric.AddTag("task_name", c.taskName)
 			} else {
 				log.Printf("I! Information for container %q was not found in cache", cid)
