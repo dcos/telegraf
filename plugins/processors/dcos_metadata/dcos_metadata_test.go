@@ -176,8 +176,8 @@ func TestApply(t *testing.T) {
 
 			dm := DCOSMetadata{
 				MesosAgentUrl: server.URL,
-				Timeout:       internal.Duration{100 * time.Millisecond},
-				RateLimit:     internal.Duration{50 * time.Millisecond},
+				Timeout:       internal.Duration{Duration: 100 * time.Millisecond},
+				RateLimit:     internal.Duration{Duration: 50 * time.Millisecond},
 				containers:    tc.cachedContainers,
 			}
 

@@ -266,8 +266,8 @@ func processResponse(resp mesos.Response, t agent.Response_Type) (agent.Response
 func init() {
 	processors.Add("dcos_metadata", func() telegraf.Processor {
 		return &DCOSMetadata{
-			Timeout:   internal.Duration{10 * time.Second},
-			RateLimit: internal.Duration{5 * time.Second},
+			Timeout:   internal.Duration{Duration: 10 * time.Second},
+			RateLimit: internal.Duration{Duration: 5 * time.Second},
 		}
 	})
 }
