@@ -25,6 +25,7 @@ type DCOSMetadata struct {
 	Timeout       internal.Duration
 	RateLimit     internal.Duration
 	containers    map[string]containerInfo
+	mu            sync.Mutex
 }
 
 // containerInfo is a tuple of metadata which we use to map a container ID to
@@ -123,6 +124,9 @@ func (dm *DCOSMetadata) getState(ctx context.Context, cli calls.Sender) (*agent.
 
 // cache caches container info from state
 func (dm *DCOSMetadata) cache(gs *agent.Response_GetState) error {
+	dm.mu.Lock()
+	defer dm.mu.Unlock()
+
 	containers := map[string]containerInfo{}
 
 	gt := gs.GetGetTasks()
