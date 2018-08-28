@@ -39,6 +39,35 @@ var (
 					time.Now(),
 				),
 			},
+		// One metric, no cached state; no tags are added but state is updated
+		testCase{
+			fixture: "fresh",
+			inputs: []telegraf.Metric{
+				newMetric("test",
+					map[string]string{"container_id": "abc123"},
+					map[string]interface{}{"value": int64(1)},
+					time.Now(),
+				),
+			},
+			expected: []telegraf.Metric{
+				newMetric("test",
+					// We don't expect tags, since no cache exists
+					map[string]string{"container_id": "abc123"},
+					map[string]interface{}{"value": int64(1)},
+					time.Now(),
+				),
+			},
+			cachedContainers: map[string]containerInfo{},
+			// We do expect the cache to be updated when apply is done
+			containers: map[string]containerInfo{
+				"abc123": containerInfo{"abc123", "task", "executor", "framework",
+					// Ensure that the tags are picked up from state
+					map[string]string{"FOO": "bar", "BAZ": "qux"}},
+			},
+		},
+			expected: []telegraf.Metric{
+				newMetric("test",
+			},
 			expected: []telegraf.Metric{
 				newMetric("test",
 					map[string]string{
