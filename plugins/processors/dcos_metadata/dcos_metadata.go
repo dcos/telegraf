@@ -26,6 +26,7 @@ type DCOSMetadata struct {
 	RateLimit     internal.Duration
 	containers    map[string]containerInfo
 	mu            sync.Mutex
+	once          Once
 }
 
 // containerInfo is a tuple of metadata which we use to map a container ID to
@@ -90,6 +91,13 @@ func (dm *DCOSMetadata) Apply(in ...telegraf.Metric) []telegraf.Metric {
 }
 
 func (dm *DCOSMetadata) refresh() {
+	// Subsequent calls to refresh() will be ignored until the RateLimit period
+	// has expired
+	go func() {
+		time.Sleep(dm.RateLimit.Duration)
+		dm.once.Reset()
+	}()
+	dm.once.Do(func() {
 		uri := dm.MesosAgentUrl + "/api/v1"
 		cli := httpagent.NewSender(httpcli.New(httpcli.Endpoint(uri)).Send)
 		ctx, cancel := context.WithTimeout(context.Background(), dm.Timeout.Duration)
@@ -104,6 +112,9 @@ func (dm *DCOSMetadata) refresh() {
 		if err != nil {
 			log.Printf("E! %s", err)
 		}
+	})
+}
+
 // getState requests state from the operator API
 func (dm *DCOSMetadata) getState(ctx context.Context, cli calls.Sender) (*agent.Response_GetState, error) {
 	resp, err := cli.Send(ctx, calls.NonStreaming(calls.GetState()))
