@@ -91,13 +91,14 @@ func (dm *DCOSMetadata) Apply(in ...telegraf.Metric) []telegraf.Metric {
 }
 
 func (dm *DCOSMetadata) refresh() {
-	// Subsequent calls to refresh() will be ignored until the RateLimit period
-	// has expired
-	go func() {
-		time.Sleep(dm.RateLimit.Duration)
-		dm.once.Reset()
-	}()
 	dm.once.Do(func() {
+		// Subsequent calls to refresh() will be ignored until the RateLimit period
+		// has expired
+		go func() {
+			time.Sleep(dm.RateLimit.Duration)
+			dm.once.Reset()
+		}()
+
 		uri := dm.MesosAgentUrl + "/api/v1"
 		cli := httpagent.NewSender(httpcli.New(httpcli.Endpoint(uri)).Send)
 		ctx, cancel := context.WithTimeout(context.Background(), dm.Timeout.Duration)
