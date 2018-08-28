@@ -66,7 +66,9 @@ func (dm *DCOSMetadata) Apply(in ...telegraf.Metric) []telegraf.Metric {
 		if cid, ok := metric.Tags()["container_id"]; ok {
 			if c, ok := dm.containers[cid]; ok {
 				metric.AddTag("service_name", c.frameworkName)
+				if c.executorName != "" {
 					metric.AddTag("executor_name", c.executorName)
+				}
 				metric.AddTag("task_name", c.taskName)
 			} else {
 				log.Printf("I! Information for container %q was not found in cache", cid)

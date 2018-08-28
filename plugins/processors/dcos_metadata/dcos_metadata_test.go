@@ -86,11 +86,22 @@ var (
 			// We do not expect the cache to be updated
 			containers: map[string]containerInfo{},
 		},
+		// No executor;
+		testCase{
+			fixture: "noexecutor",
+			inputs: []telegraf.Metric{
+				newMetric("test",
+					map[string]string{"container_id": "abc123"},
+					map[string]interface{}{"value": int64(1)},
+					time.Now(),
+				),
+			},
 			expected: []telegraf.Metric{
 				newMetric("test",
 					map[string]string{
 						"container_id": "abc123",
 						"service_name": "framework",
+						// no executor tag at all
 						"task_name": "task",
 					},
 					map[string]interface{}{"value": int64(1)},
