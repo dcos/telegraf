@@ -121,6 +121,107 @@ func (dm *DCOSMetadata) getState(ctx context.Context, cli calls.Sender) (*agent.
 	return gs, nil
 }
 
+// cache caches container info from state
+func (dm *DCOSMetadata) cache(gs *agent.Response_GetState) error {
+	containers := map[string]containerInfo{}
+
+	gt := gs.GetGetTasks()
+	if gt == nil { // no tasks are running on the cluster
+		dm.containers = containers
+		return nil
+	}
+
+	// map frameworks and executors in advance to avoid iterating
+	// over both for each container
+	frameworkNames := mapFrameworkNames(gs.GetGetFrameworks())
+	executorNames := mapExecutorNames(gs.GetGetExecutors())
+
+	for _, t := range gt.GetLaunchedTasks() {
+		cid := getContainerID(t.GetStatuses())
+		eName := ""
+		// ExecutorID is _not_ guaranteed not to be nil (FrameworkID is)
+		if eid := t.GetExecutorID(); eid != nil {
+			eName = executorNames[eid.Value]
+		}
+
+		// If container ID could not be found, don't add a nil entry
+		if cid != "" {
+			containers[cid] = containerInfo{
+				containerID:   cid,
+				taskName:      t.GetName(),
+				executorName:  eName,
+				frameworkName: frameworkNames[t.GetFrameworkID().Value],
+				taskLabels:    mapTaskLabels(t.GetLabels()),
+			}
+		}
+	}
+
+	dm.containers = containers
+	return nil
+}
+
+// getContainerID retrieves the container ID linked to this task. Task can have
+// multiple statuses. Each status can have multiple container IDs. In DC/OS,
+// there is a one-to-one mapping between tasks and containers; however it is
+// possible to have nested containers. Therefore we use the first status, and
+// return its parent container ID if possible, and if not, then its ID.
+func getContainerID(statuses []mesos.TaskStatus) string {
+	// Container ID is held in task status
+	for _, s := range statuses {
+		if cs := s.GetContainerStatus(); cs != nil {
+			if cid := cs.GetContainerID(); cid != nil {
+				// TODO (philipnrmn) account for deeply-nested containers
+				if p := cid.GetParent(); p != nil {
+					return p.GetValue()
+				}
+				return cid.GetValue()
+			}
+		}
+	}
+	return ""
+}
+
+// mapFrameworkNames returns a map of framework ids and names
+func mapFrameworkNames(gf *agent.Response_GetFrameworks) map[string]string {
+	results := map[string]string{}
+	if gf != nil {
+		for _, f := range gf.GetFrameworks() {
+			fi := f.GetFrameworkInfo()
+			id := fi.GetID().Value
+			results[id] = fi.GetName()
+		}
+	}
+	return results
+}
+
+// mapExecutorNames returns a map of executor ids and names
+func mapExecutorNames(ge *agent.Response_GetExecutors) map[string]string {
+	results := map[string]string{}
+	if ge != nil {
+		for _, e := range ge.GetExecutors() {
+			ei := e.GetExecutorInfo()
+			id := ei.GetExecutorID().Value
+			results[id] = ei.GetName()
+		}
+	}
+	return results
+}
+
+// mapTaskLabels returns a map of all task labels prefixed DCOS_METRICS_
+func mapTaskLabels(labels *mesos.Labels) map[string]string {
+	results := map[string]string{}
+	if labels != nil {
+		for _, l := range labels.GetLabels() {
+			k := l.GetKey()
+			if len(k) > 13 {
+				if k[:13] == "DCOS_METRICS_" {
+					results[k[13:]] = l.GetValue()
+				}
+			}
+		}
+	}
+	return results
+}
 
 // processResponse reads the response from a triggered request, verifies its
 // type, and returns an agent response
