@@ -65,6 +65,10 @@ func (dm *DCOSMetadata) Apply(in ...telegraf.Metric) []telegraf.Metric {
 		// Ignore metrics without container_id tag
 		if cid, ok := metric.Tags()["container_id"]; ok {
 			if c, ok := dm.containers[cid]; ok {
+				// Data for this container was cached
+				for k, v := range c.taskLabels {
+					metric.AddTag(k, v)
+				}
 				metric.AddTag("service_name", c.frameworkName)
 				if c.executorName != "" {
 					metric.AddTag("executor_name", c.executorName)
