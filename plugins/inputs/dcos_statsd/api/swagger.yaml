@@ -1,0 +1,135 @@
+---
+swagger: "2.0"
+info:
+  description: "Telegraf plugin for DC/OS which receives statsd from a mesos module"
+  version: "1.0.0"
+  title: "dcos_statsd telegraf plugin"
+  contact:
+    email: "philip@mesosphere.io"
+  license:
+    name: "Apache 2.0"
+    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+schemes:
+- "http"
+paths:
+  /health:
+    get:
+      summary: "health"
+      description: "gives a summary of the health of the commnand API"
+      operationId: "reportHealth"
+      produces:
+      - "text/plain"
+      parameters: []
+      responses:
+        200:
+          description: "healthy"
+        503:
+          description: "unhealthy"
+  /containers:
+    get:
+      summary: "lists containers"
+      description: "produces a list of each known container and the host and port\
+        \ pair for its server."
+      operationId: "listContainers"
+      produces:
+      - "application/json"
+      parameters: []
+      responses:
+        200:
+          description: "a list of containers"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/Container"
+  /container:
+    post:
+      summary: "adds a container; starts a server"
+      description: "Adds a container to the system, returning the address of the\
+        \ interface and the port on which the related server is created."
+      operationId: "addContainer"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "container"
+        description: "Container to add"
+        required: false
+        schema:
+          $ref: "#/definitions/Container"
+        x-exportParamName: "Container"
+      responses:
+        201:
+          description: "Container added; server started"
+          schema:
+            $ref: "#/definitions/Container"
+        204:
+          description: "Container added, but no server will be started. This \
+            \ only happens when the agent is aware that the container in \
+            \ question will not produce statsd metrics."
+        303:
+          description: "Container not added; container already exists and has \
+            \ the specified address."
+        409:
+          description: "Container not added; server could not be started as \
+            \ the specified address was occupied by another process."
+        503:
+          description: "Container not added; server could not be started"
+  /container/{id}:
+    get:
+      summary: "describes a container"
+      operationId: "describeContainer"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "id of container"
+        required: true
+        type: "string"
+        x-exportParamName: "Id"
+      responses:
+        200:
+          description: "container with server host and port"
+          schema:
+            $ref: "#/definitions/Container"
+        404:
+          description: "Not found"
+    delete:
+      description: "removes container; stops server"
+      operationId: "removeContainer"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "id of container to remove"
+        required: true
+        type: "string"
+        x-exportParamName: "Id"
+      responses:
+        202:
+          description: "Container removed; server will be stopped"
+        404:
+          description: "Not found"
+definitions:
+  Container:
+    type: "object"
+    required:
+    - "id"
+    properties:
+      id:
+        type: "string"
+        format: "uuid"
+        example: "d290f1ee-6c54-4b01-90e6-d701748f0851"
+      statsd_host:
+        type: "string"
+        format: "ipv4"
+        example: "198.51.100.1"
+      statsd_port:
+        type: "number"
+        format: "int32"
+        example: 69096
+    example:
+      statsd_port: 69096
+      statsd_host: "198.51.100.1"
+      id: "d290f1ee-6c54-4b01-90e6-d701748f0851"

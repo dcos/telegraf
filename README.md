@@ -160,6 +160,7 @@ For documentation on the latest development code see the [documentation index][d
 * [couchdb](./plugins/inputs/couchdb)
 * [cpu](./plugins/inputs/cpu)
 * [DC/OS](./plugins/inputs/dcos)
+* [dcos_statsd](./plugins/inputs/dcos_statsd)
 * [diskio](./plugins/inputs/diskio)
 * [disk](./plugins/inputs/disk)
 * [disque](./plugins/inputs/disque)
