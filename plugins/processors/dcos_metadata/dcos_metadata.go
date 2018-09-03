@@ -6,12 +6,15 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"sync"
 	"time"
 
 	"github.com/influxdata/telegraf"
 	"github.com/influxdata/telegraf/internal"
 	"github.com/influxdata/telegraf/plugins/processors"
+
+	"github.com/dcos/dcos-go/dcos/http/transport"
 
 	"github.com/mesos/mesos-go/api/v1/lib"
 	"github.com/mesos/mesos-go/api/v1/lib/agent"
@@ -21,12 +24,14 @@ import (
 )
 
 type DCOSMetadata struct {
-	MesosAgentUrl string
-	Timeout       internal.Duration
-	RateLimit     internal.Duration
-	containers    map[string]containerInfo
-	mu            sync.Mutex
-	once          Once
+	MesosAgentUrl     string
+	Timeout           internal.Duration
+	RateLimit         internal.Duration
+	CaCertificatePath string
+	IamConfigPath     string
+	containers        map[string]containerInfo
+	mu                sync.Mutex
+	once              Once
 }
 
 // containerInfo is a tuple of metadata which we use to map a container ID to
@@ -40,12 +45,15 @@ type containerInfo struct {
 }
 
 const sampleConfig = `
-## The URL of the local mesos agent
-mesos_agent_url = "http://$NODE_PRIVATE_IP:5051"
-## The period after which requests to mesos agent should time out
-timeout = "10s"
-## The minimum period between requests to the mesos agent
-rate_limit = "5s"
+	## The URL of the local mesos agent
+	mesos_agent_url = "http://$NODE_PRIVATE_IP:5051"
+	## The period after which requests to mesos agent should time out
+	timeout = "10s"
+	## The minimum period between requests to the mesos agent
+	rate_limit = "5s"
+  ## Optional IAM configuration
+  # ca_certificate_path = "/run/dcos/pki/CA/ca-bundle.crt"
+  # iam_config_path = "/run/dcos/etc/dcos-telegraf/service_account.json"
 `
 
 // SampleConfig returns the default configuration
@@ -174,6 +182,38 @@ func (dm *DCOSMetadata) cache(gs *agent.Response_GetState) error {
 
 	dm.containers = containers
 	return nil
+}
+
+// newClient returns an httpcli client configured with the available levels of
+// TLS and IAM according to flags set in the config
+func (dm *DCOSMetadata) newClient() (*httpcli.Client, error) {
+	uri := dm.MesosAgentUrl + "/api/v1"
+	client := httpcli.New(httpcli.Endpoint(uri))
+	cfgOpts := []httpcli.ConfigOpt{}
+	opts := []httpcli.Opt{}
+
+	var tr *http.Transport
+	var rt http.RoundTripper
+	var err error
+
+	if dm.CaCertificatePath != "" {
+		if tr, err = getTransport(dm.CaCertificatePath); err != nil {
+			return client, err
+		}
+	}
+
+	if dm.IamConfigPath != "" {
+		if rt, err = transport.NewRoundTripper(
+			tr,
+			transport.OptionReadIAMConfig(dm.IamConfigPath)); err != nil {
+			return client, err
+		}
+		cfgOpts = append(cfgOpts, httpcli.RoundTripper(rt))
+	}
+	opts = append(opts, httpcli.Do(httpcli.With(cfgOpts...)))
+	client.With(opts...)
+
+	return client, nil
 }
 
 // getContainerID retrieves the container ID linked to this task. Task can have

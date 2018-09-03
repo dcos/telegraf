@@ -16,6 +16,9 @@ appropriate metadata in the form of DC/OS primitives.
   timeout = "10s"
   ## The minimum period between requests to the mesos agent
   rate_limit = "5s"
+  ## Optional IAM configuration
+  # ca_certificate_path = "/run/dcos/pki/CA/ca-bundle.crt"
+  # iam_config_path = "/run/dcos/etc/dcos-telegraf/service_account.json"
 ```
 
 ### Tags:
