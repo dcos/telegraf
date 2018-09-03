@@ -452,9 +452,10 @@ func (t *producerTranslator) systemMetricsMessage(m telegraf.Metric) producers.M
 	}
 }
 
-// datapointsFromMetric returns a []producers.Datapoint for the fields in m, with tags set on all Datapoints.
+// datapointsFromMetric returns a []producers.Datapoint for the fields in m.
+// Tags are applied to each Datapoint, and each Datapoint name is prefixed with namePrefix.
 // Datapoints are sorted by name for stability.
-func datapointsFromMetric(m telegraf.Metric, prefix string, tags map[string]string) []producers.Datapoint {
+func datapointsFromMetric(m telegraf.Metric, namePrefix string, tags map[string]string) []producers.Datapoint {
 	fields := m.Fields()
 	timestamp := timestampFromMetric(m)
 
@@ -472,9 +473,9 @@ func datapointsFromMetric(m telegraf.Metric, prefix string, tags map[string]stri
 		// If we have a single metric field whose name is value, omit it from the complete field name.
 		var name string
 		if len(fns) == 1 && fn == "value" {
-			name = prefix
+			name = namePrefix
 		} else {
-			name = prefix + "." + fn
+			name = namePrefix + "." + fn
 		}
 
 		datapoints[i] = producers.Datapoint{
