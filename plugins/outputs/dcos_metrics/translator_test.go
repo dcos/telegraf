@@ -485,6 +485,56 @@ func TestTranslate(t *testing.T) {
 		},
 
 		testCase{
+			name: "container metric with empty executor_name",
+			input: metricParams{
+				name: "prefix.foo",
+				tags: map[string]string{
+					"container_id":  "cid",
+					"service_name":  "sname",
+					"task_name":     "tname",
+					"executor_name": "",
+					"label_name":    "label_value",
+				},
+				fields: map[string]interface{}{
+					"metric1": uint64(0),
+					"metric2": uint64(1),
+				},
+				tm: tm,
+				tp: telegraf.Untyped,
+			},
+			output: producers.MetricsMessage{
+				Name: "dcos.metrics.container",
+				Dimensions: producers.Dimensions{
+					MesosID:       translator.MesosID,
+					ClusterID:     translator.DCOSClusterID,
+					Hostname:      translator.DCOSNodePrivateIP,
+					ContainerID:   "cid",
+					FrameworkName: "sname",
+					TaskName:      "tname",
+					Labels:        map[string]string{"label_name": "label_value"},
+				},
+				Datapoints: []producers.Datapoint{
+					producers.Datapoint{
+						Name:      "dcos.metrics.container.metric1",
+						Value:     uint64(0),
+						Timestamp: timestamp,
+						Tags: map[string]string{
+							"container_id": "cid",
+						},
+					},
+					producers.Datapoint{
+						Name:      "dcos.metrics.container.metric2",
+						Value:     uint64(1),
+						Timestamp: timestamp,
+						Tags: map[string]string{
+							"container_id": "cid",
+						},
+					},
+				},
+			},
+		},
+
+		testCase{
 			name: "app metric",
 			input: metricParams{
 				name: "prefix.foo",

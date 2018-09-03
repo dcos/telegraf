@@ -86,12 +86,14 @@ func (t *producerTranslator) containerMetricsMessage(m telegraf.Metric) producer
 	taskName := getAndDelete(tags, "task_name")
 	executorName := getAndDelete(tags, "executor_name")
 
+	dpTags := map[string]string{"container_id": containerID}
+	if executorName != "" {
+		dpTags["executor_name"] = executorName
+	}
+
 	return producers.MetricsMessage{
-		Name: producers.ContainerMetricPrefix,
-		Datapoints: datapointsFromMetric(m, producers.ContainerMetricPrefix, map[string]string{
-			"container_id":  containerID,
-			"executor_name": executorName,
-		}),
+		Name:       producers.ContainerMetricPrefix,
+		Datapoints: datapointsFromMetric(m, producers.ContainerMetricPrefix, dpTags),
 		Dimensions: producers.Dimensions{
 			MesosID:       t.MesosID,
 			ClusterID:     t.DCOSClusterID,
