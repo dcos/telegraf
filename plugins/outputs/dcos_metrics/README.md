@@ -21,4 +21,7 @@ The DC/OS Metrics output provides a [DC/OS Metrics API](https://docs.mesosphere.
 
   # Local Mesos instance's ID.
   mesos_id = "ABCDEF1234"
+
+  # Global DC/OS Cluster ID.
+  dcos_cluster_id = "4321FEDCBA"
 ```
