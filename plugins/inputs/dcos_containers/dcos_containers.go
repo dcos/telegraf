@@ -7,11 +7,14 @@ import (
 	"io"
 	"log"
 	"math"
+	"net/http"
 	"time"
 
 	"github.com/influxdata/telegraf"
 	"github.com/influxdata/telegraf/internal"
 	"github.com/influxdata/telegraf/plugins/inputs"
+
+	"github.com/dcos/dcos-go/dcos/http/transport"
 
 	"github.com/mesos/mesos-go/api/v1/lib"
 	"github.com/mesos/mesos-go/api/v1/lib/agent"
@@ -21,16 +24,21 @@ import (
 )
 
 const sampleConfig = `
-## The URL of the local mesos agent
-mesos_agent_url = "http://$NODE_PRIVATE_IP:5051"
-## The period after which requests to mesos agent should time out
-timeout = "10s"
+	## The URL of the local mesos agent
+	mesos_agent_url = "http://$NODE_PRIVATE_IP:5051"
+	## The period after which requests to mesos agent should time out
+  # timeout = "10s"
+  ## Optional IAM configuration
+  # ca_certificate_path = "/run/dcos/pki/CA/ca-bundle.crt"
+  # iam_config_path = "/run/dcos/etc/dcos-telegraf/service_account.json"
 `
 
 // DCOSContainers describes the options available to this plugin
 type DCOSContainers struct {
-	MesosAgentUrl string
-	Timeout       internal.Duration
+	MesosAgentUrl     string
+	Timeout           internal.Duration
+	CaCertificatePath string
+	IamConfigPath     string
 }
 
 // measurement is a combination of fields and tags specific to those fields
@@ -75,8 +83,12 @@ func (dc *DCOSContainers) Description() string {
 // Gather takes in an accumulator and adds the metrics that the plugin gathers.
 // It is invoked on a schedule (default every 10s) by the telegraf runtime.
 func (dc *DCOSContainers) Gather(acc telegraf.Accumulator) error {
-	uri := dc.MesosAgentUrl + "/api/v1"
-	cli := httpagent.NewSender(httpcli.New(httpcli.Endpoint(uri)).Send)
+	client, err := dc.newClient()
+	if err != nil {
+		return err
+	}
+
+	cli := httpagent.NewSender(client.Send)
 	ctx, cancel := context.WithTimeout(context.Background(), dc.Timeout.Duration)
 	defer cancel()
 
@@ -119,6 +131,38 @@ func (dc *DCOSContainers) getContainers(ctx context.Context, cli calls.Sender) (
 	}
 
 	return gc, nil
+}
+
+// newClient returns an httpcli client configured with the available levels of
+// TLS and IAM according to flags set in the config
+func (dc *DCOSContainers) newClient() (*httpcli.Client, error) {
+	uri := dc.MesosAgentUrl + "/api/v1"
+	client := httpcli.New(httpcli.Endpoint(uri))
+	cfgOpts := []httpcli.ConfigOpt{}
+	opts := []httpcli.Opt{}
+
+	var tr *http.Transport
+	var rt http.RoundTripper
+	var err error
+
+	if dc.CaCertificatePath != "" {
+		if tr, err = getTransport(dc.CaCertificatePath); err != nil {
+			return client, err
+		}
+	}
+
+	if dc.IamConfigPath != "" {
+		if rt, err = transport.NewRoundTripper(
+			tr,
+			transport.OptionReadIAMConfig(dc.IamConfigPath)); err != nil {
+			return client, err
+		}
+		cfgOpts = append(cfgOpts, httpcli.RoundTripper(rt))
+	}
+	opts = append(opts, httpcli.Do(httpcli.With(cfgOpts...)))
+	client.With(opts...)
+
+	return client, nil
 }
 
 // processResponse reads the response from a triggered request, verifies its
