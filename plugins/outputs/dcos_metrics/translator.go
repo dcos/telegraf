@@ -88,7 +88,7 @@ func (t *producerTranslator) containerMetricsMessage(m telegraf.Metric) producer
 
 	return producers.MetricsMessage{
 		Name: producers.ContainerMetricPrefix,
-		Datapoints: datapointsFromMetric(m, map[string]string{
+		Datapoints: datapointsFromMetric(m, producers.ContainerMetricPrefix, map[string]string{
 			"container_id":  containerID,
 			"executor_name": executorName,
 		}),
@@ -114,9 +114,11 @@ func (t *producerTranslator) appMetricsMessage(m telegraf.Metric) producers.Metr
 	// We don't use metric_type.
 	delete(tags, "metric_type")
 
+	fieldNamePrefix := producers.AppMetricPrefix + "." + metricNameSuffix(m.Name())
+
 	return producers.MetricsMessage{
-		Name:       producers.AppMetricPrefix,
-		Datapoints: datapointsFromMetric(m, tags),
+		Name:       fieldNamePrefix,
+		Datapoints: datapointsFromMetric(m, fieldNamePrefix, tags),
 		Dimensions: producers.Dimensions{
 			MesosID:       t.MesosID,
 			ClusterID:     t.DCOSClusterID,
@@ -452,7 +454,7 @@ func (t *producerTranslator) systemMetricsMessage(m telegraf.Metric) producers.M
 
 // datapointsFromMetric returns a []producers.Datapoint for the fields in m, with tags set on all Datapoints.
 // Datapoints are sorted by name for stability.
-func datapointsFromMetric(m telegraf.Metric, tags map[string]string) []producers.Datapoint {
+func datapointsFromMetric(m telegraf.Metric, prefix string, tags map[string]string) []producers.Datapoint {
 	fields := m.Fields()
 	timestamp := timestampFromMetric(m)
 
@@ -467,8 +469,16 @@ func datapointsFromMetric(m telegraf.Metric, tags map[string]string) []producers
 
 	datapoints := make([]producers.Datapoint, len(fns))
 	for i, fn := range fns {
+		// If we have a single metric field whose name is value, omit it from the complete field name.
+		var name string
+		if len(fns) == 1 && fn == "value" {
+			name = prefix
+		} else {
+			name = prefix + "." + fn
+		}
+
 		datapoints[i] = producers.Datapoint{
-			Name:      fn,
+			Name:      name,
 			Value:     fields[fn],
 			Timestamp: timestamp,
 			Tags:      tags,

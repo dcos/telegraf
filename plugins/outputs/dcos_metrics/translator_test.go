@@ -463,7 +463,7 @@ func TestTranslate(t *testing.T) {
 				},
 				Datapoints: []producers.Datapoint{
 					producers.Datapoint{
-						Name:      "metric1",
+						Name:      "dcos.metrics.container.metric1",
 						Value:     uint64(0),
 						Timestamp: timestamp,
 						Tags: map[string]string{
@@ -472,7 +472,7 @@ func TestTranslate(t *testing.T) {
 						},
 					},
 					producers.Datapoint{
-						Name:      "metric2",
+						Name:      "dcos.metrics.container.metric2",
 						Value:     uint64(1),
 						Timestamp: timestamp,
 						Tags: map[string]string{
@@ -496,14 +496,13 @@ func TestTranslate(t *testing.T) {
 					"label_name":   "label_value",
 				},
 				fields: map[string]interface{}{
-					"metric1": uint64(0),
-					"metric2": uint64(1),
+					"value": uint64(0),
 				},
 				tm: tm,
 				tp: telegraf.Untyped,
 			},
 			output: producers.MetricsMessage{
-				Name: "dcos.metrics.app",
+				Name: "dcos.metrics.app.foo",
 				Dimensions: producers.Dimensions{
 					MesosID:       translator.MesosID,
 					ClusterID:     translator.DCOSClusterID,
@@ -514,14 +513,8 @@ func TestTranslate(t *testing.T) {
 				},
 				Datapoints: []producers.Datapoint{
 					producers.Datapoint{
-						Name:      "metric1",
+						Name:      "dcos.metrics.app.foo",
 						Value:     uint64(0),
-						Timestamp: timestamp,
-						Tags:      map[string]string{"label_name": "label_value"},
-					},
-					producers.Datapoint{
-						Name:      "metric2",
-						Value:     uint64(1),
 						Timestamp: timestamp,
 						Tags:      map[string]string{"label_name": "label_value"},
 					},
