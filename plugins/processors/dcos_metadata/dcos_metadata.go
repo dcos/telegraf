@@ -107,8 +107,13 @@ func (dm *DCOSMetadata) refresh() {
 			dm.once.Reset()
 		}()
 
-		uri := dm.MesosAgentUrl + "/api/v1"
-		cli := httpagent.NewSender(httpcli.New(httpcli.Endpoint(uri)).Send)
+		client, err := dm.newClient()
+		if err != nil {
+			log.Printf("E! %s", err)
+			return
+		}
+
+		cli := httpagent.NewSender(client.Send)
 		ctx, cancel := context.WithTimeout(context.Background(), dm.Timeout.Duration)
 		defer cancel()
 
