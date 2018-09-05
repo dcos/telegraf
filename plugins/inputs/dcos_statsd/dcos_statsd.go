@@ -101,6 +101,14 @@ func (ds *DCOSStatsd) Start(acc telegraf.Accumulator) error {
 				// command server
 				log.Fatalf("E! Could not listen on unix socket %s", ds.Listen)
 			}
+
+			defer func() {
+				if r := recover(); r != nil {
+					ds.Stop()
+					log.Fatalf("dcos_statsd API server crashed unrecoverably: %v", r)
+				}
+			}()
+
 			err = ds.apiServer.Serve(ln)
 			log.Printf("I! dcos_statsd API server closed: %s", err)
 		}
