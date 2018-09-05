@@ -45,6 +45,7 @@ type DCOSStatsd struct {
 	StatsdHost    string
 	apiServer     *http.Server
 	containers    map[string]containers.Container
+	rwmu          sync.RWMutex
 }
 
 // SampleConfig returns the default configuration
@@ -114,6 +115,8 @@ func (ds *DCOSStatsd) Start(acc telegraf.Accumulator) error {
 // It is invoked on a schedule (default every 10s) by the telegraf runtime.
 func (ds *DCOSStatsd) Gather(acc telegraf.Accumulator) error {
 	var wg sync.WaitGroup
+
+	ds.rwmu.RLock()
 	for _, ctr := range ds.containers {
 		wg.Add(1)
 		go func(c containers.Container) {
@@ -125,6 +128,8 @@ func (ds *DCOSStatsd) Gather(acc telegraf.Accumulator) error {
 			}
 		}(ctr)
 	}
+	ds.rwmu.RUnlock()
+
 	wg.Wait()
 	return nil
 }
@@ -135,9 +140,11 @@ func (ds *DCOSStatsd) Stop() {
 	defer cancel()
 	ds.apiServer.Shutdown(ctx)
 
+	ds.rwmu.RLock()
 	for _, c := range ds.containers {
 		c.Server.Stop()
 	}
+	ds.rwmu.RUnlock()
 }
 
 // ListContainers returns a list of known containers
@@ -151,7 +158,10 @@ func (ds *DCOSStatsd) ListContainers() []containers.Container {
 
 // GetContainer returns a container from its ID, and whether it was successful
 func (ds *DCOSStatsd) GetContainer(cid string) (*containers.Container, bool) {
+	ds.rwmu.RLock()
 	ctr, ok := ds.containers[cid]
+	ds.rwmu.RUnlock()
+
 	return &ctr, ok
 }
 
@@ -213,7 +223,10 @@ func (ds *DCOSStatsd) AddContainer(ctr containers.Container) (*containers.Contai
 		}
 	}
 
+	ds.rwmu.Lock()
 	ds.containers[ctr.Id] = ctr
+	ds.rwmu.Unlock()
+
 	return &ctr, nil
 }
 
@@ -232,7 +245,11 @@ func (ds *DCOSStatsd) RemoveContainer(c containers.Container) error {
 		}
 	}
 	ctr.Server.Stop()
+
+	ds.rwmu.Lock()
 	delete(ds.containers, c.Id)
+	ds.rwmu.Unlock()
+
 	return nil
 }
 
