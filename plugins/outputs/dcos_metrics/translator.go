@@ -3,6 +3,7 @@ package dcos_metrics
 import (
 	"errors"
 	"fmt"
+	"math"
 	"sort"
 	"strings"
 	"time"
@@ -481,13 +482,22 @@ func datapointsFromMetric(m telegraf.Metric, tags map[string]string) []producers
 
 		datapoints[i] = producers.Datapoint{
 			Name:      name,
-			Value:     fields[fn],
+			Value:     datapointValueFromFieldValue(fields[fn]),
 			Timestamp: timestamp,
 			Tags:      tags,
 		}
 	}
 
 	return datapoints
+}
+
+// datapointValueFromField returns a datapoint value for a producers.MetricsMessage from a telegraf.Metric field value.
+func datapointValueFromFieldValue(value interface{}) interface{} {
+	// Convert NaN values to an empty string. This prevents the HTTP producer from trying to serialize Nan to JSON.
+	if v, ok := value.(float64); ok && math.IsNaN(v) {
+		return ""
+	}
+	return value
 }
 
 // timestampFromMetric returns a string representation of m's timestamp formatted according to RFC 3339.

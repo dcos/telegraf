@@ -1,6 +1,7 @@
 package dcos_metrics
 
 import (
+	"math"
 	"reflect"
 	"testing"
 	"time"
@@ -572,6 +573,46 @@ func TestTranslate(t *testing.T) {
 					producers.Datapoint{
 						Name:      "prefix.foo.metric2",
 						Value:     uint64(1),
+						Timestamp: timestamp,
+						Tags:      map[string]string{"label_name": "label_value"},
+					},
+				},
+			},
+		},
+
+		// App metrics are assumed to come from statsd, which may provide NaN values. These values should be converted
+		// to an empty string.
+		testCase{
+			name: "app metric with NaN value",
+			input: metricParams{
+				name: "prefix.foo",
+				tags: map[string]string{
+					"container_id": "cid",
+					"service_name": "sname",
+					"task_name":    "tname",
+					"metric_type":  "mtype",
+					"label_name":   "label_value",
+				},
+				fields: map[string]interface{}{
+					"metric1": math.NaN(),
+				},
+				tm: tm,
+				tp: telegraf.Untyped,
+			},
+			output: producers.MetricsMessage{
+				Name: "dcos.metrics.app",
+				Dimensions: producers.Dimensions{
+					MesosID:       translator.MesosID,
+					ClusterID:     translator.DCOSClusterID,
+					Hostname:      translator.DCOSNodePrivateIP,
+					ContainerID:   "cid",
+					FrameworkName: "sname",
+					TaskName:      "tname",
+				},
+				Datapoints: []producers.Datapoint{
+					producers.Datapoint{
+						Name:      "prefix.foo.metric1",
+						Value:     "",
 						Timestamp: timestamp,
 						Tags:      map[string]string{"label_name": "label_value"},
 					},

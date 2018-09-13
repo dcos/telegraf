@@ -1,7 +1,19 @@
 package dcos_metrics
 
 import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"math"
+	"net/http"
 	"testing"
+	"time"
+
+	"github.com/dcos/dcos-metrics/producers"
+
+	"github.com/influxdata/telegraf"
+	"github.com/influxdata/telegraf/internal"
+	"github.com/influxdata/telegraf/metric"
 )
 
 func TestSplitHostPort(t *testing.T) {
@@ -58,4 +70,90 @@ func TestSplitHostPort(t *testing.T) {
 			t.Fatalf("expected error for hostport %s", hostPort)
 		}
 	}
+}
+
+func TestDCOSMetricsNaNValue(t *testing.T) {
+	// Assert that the server returns a 200 status for container app metrics after the HTTP producer receives a NaN value.
+	containerID := "cid"
+
+	dcosMetrics, url, err := setupDCOSMetrics()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer dcosMetrics.Stop()
+
+	m, err := metric.New(
+		"prefix.foo",
+		map[string]string{
+			"container_id":  containerID,
+			"service_name":  "sname",
+			"task_name":     "tname",
+			"executor_name": "ename",
+			"label_name":    "label_value",
+			"metric_type":   "gauge",
+		},
+		map[string]interface{}{
+			"metric1": math.NaN(),
+		},
+		time.Now(),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = dcosMetrics.Write([]telegraf.Metric{m})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resp, err := http.Get(url + "/v0/containers/" + containerID + "/app")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if resp.StatusCode != 200 {
+		t.Fatalf("expected status code 200, got %d", resp.StatusCode)
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var metrics producers.MetricsMessage
+	json.Unmarshal(body, &metrics)
+
+	found := false
+	for _, dp := range metrics.Datapoints {
+		if dp.Name == "prefix.foo.metric1" {
+			if dp.Value != "" {
+				t.Fatalf("expected datapoint value to be empty string, got %v", dp.Value)
+			}
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatal("datapoint missing in response")
+	}
+}
+
+func setupDCOSMetrics() (DCOSMetrics, string, error) {
+	serverHostPort := "localhost:50001"
+	serverURL := fmt.Sprintf("http://%s", serverHostPort)
+
+	dm := DCOSMetrics{
+		Listen:            serverHostPort,
+		CacheExpiry:       internal.Duration{Duration: time.Second},
+		MesosID:           "fake-mesos-id",
+		DCOSNodeRole:      "agent",
+		DCOSClusterID:     "fake-cluster-id",
+		DCOSNodePrivateIP: "10.0.0.1",
+	}
+
+	if err := dm.Start(); err != nil {
+		return dm, serverURL, err
+	}
+
+	return dm, serverURL, nil
 }
