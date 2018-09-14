@@ -631,6 +631,8 @@ func TestTranslate(t *testing.T) {
 				t.Fatal("translation failed to produce a MetricsMessage")
 			}
 			if !reflect.DeepEqual(msg, tc.output) {
+				t.Log("expected:", tc.output)
+				t.Log("actually:", msg)
 				t.Fatal("translation returned an unexpected MetricsMessage")
 			}
 		})
