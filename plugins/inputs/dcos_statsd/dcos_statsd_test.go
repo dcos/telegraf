@@ -167,7 +167,7 @@ func TestGather(t *testing.T) {
 
 	// Tests for the existence of these stats are run in TestGatherUDP
 	// as they do not regularly pass on CI. Invoke them via
-	// go test -tag udp
+	// go test -tags udp
 
 	t.Log("Containers are persisted to disk")
 	files, err := ioutil.ReadDir(ds.ContainersDir)
