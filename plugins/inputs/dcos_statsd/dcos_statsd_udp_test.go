@@ -54,8 +54,8 @@ func TestGatherUDP(t *testing.T) {
 
 	// Send each count ten times to each server
 	for i := 0; i < 10; i++ {
-		abcconn.Write([]byte("foo:123|c"))
-		xyzconn.Write([]byte("foo:123|c"))
+		abcconn.Write([]byte("foo.bar:123|c"))
+		xyzconn.Write([]byte("foo.bar:123|c"))
 	}
 
 	abcconn.Close()
@@ -73,7 +73,7 @@ func TestGatherUDP(t *testing.T) {
 			var rawVal interface{}
 			var val int64
 			var ok bool
-			if p.Measurement != "foo" {
+			if p.Measurement != "foo.bar" {
 				continue
 			}
 			if cid, ok = p.Tags["container_id"]; !ok {

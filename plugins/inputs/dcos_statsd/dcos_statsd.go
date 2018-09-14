@@ -186,6 +186,7 @@ func (ds *DCOSStatsd) AddContainer(ctr containers.Container) (*containers.Contai
 		ServiceAddress:         fmt.Sprintf(":%d", ctr.StatsdPort),
 		ParseDataDogTags:       true,
 		AllowedPendingMessages: 10000,
+		MetricSeparator:        ".",
 	}
 
 	// statsd will crash the whole Telegraf process if it attempts to listen on
