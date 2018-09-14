@@ -21,6 +21,14 @@ type producerTranslator struct {
 	DCOSNodePrivateIP string
 }
 
+// metricMapping describes the relationship between a telegraf metric name and
+// a dcos metrics name
+type metricMapping struct {
+	telegrafName    string
+	dcosMetricsName string
+	unit            string
+}
+
 // Translate returns a producers.MetricsMessage created from metric. ok is false if a MetricsMessage could not be
 // created.
 func (t *producerTranslator) Translate(metric telegraf.Metric) (msg producers.MetricsMessage, ok bool, err error) {
@@ -325,66 +333,34 @@ func (t *producerTranslator) netMetricsMessage(m telegraf.Metric) producers.Metr
 	fields := m.Fields()
 	timestamp := timestampFromMetric(m)
 	tags := map[string]string{"interface": m.Tags()["interface"]}
+
+	mappings := []metricMapping{
+		metricMapping{"bytes_recv", "network.in", "bytes"},
+		metricMapping{"bytes_sent", "network.out", "bytes"},
+		metricMapping{"packets_recv", "network.in.packets", "count"},
+		metricMapping{"packets_sent", "network.out.packets", "count"},
+		metricMapping{"drop_in", "network.in.dropped", "count"},
+		metricMapping{"drop_out", "network.out.dropped", "count"},
+		metricMapping{"err_in", "network.in.errors", "count"},
+		metricMapping{"err_out", "network.out.errors", "count"},
+	}
+
+	datapoints := []producers.Datapoint{}
+	for _, m := range mappings {
+		if fields[m.telegrafName] != nil {
+			datapoints = append(datapoints, producers.Datapoint{
+				Name:      m.dcosMetricsName,
+				Unit:      m.unit,
+				Value:     fields[m.telegrafName],
+				Timestamp: timestamp,
+				Tags:      tags,
+			})
+		}
+	}
+
 	return producers.MetricsMessage{
-		Name: producers.NodeMetricPrefix,
-		Datapoints: []producers.Datapoint{
-			producers.Datapoint{
-				Name:      "network.in",
-				Unit:      "bytes",
-				Value:     fields["bytes_recv"],
-				Timestamp: timestamp,
-				Tags:      tags,
-			},
-			producers.Datapoint{
-				Name:      "network.out",
-				Unit:      "bytes",
-				Value:     fields["bytes_sent"],
-				Timestamp: timestamp,
-				Tags:      tags,
-			},
-			producers.Datapoint{
-				Name:      "network.in.packets",
-				Unit:      "count",
-				Value:     fields["packets_recv"],
-				Timestamp: timestamp,
-				Tags:      tags,
-			},
-			producers.Datapoint{
-				Name:      "network.out.packets",
-				Unit:      "count",
-				Value:     fields["packets_sent"],
-				Timestamp: timestamp,
-				Tags:      tags,
-			},
-			producers.Datapoint{
-				Name:      "network.in.dropped",
-				Unit:      "count",
-				Value:     fields["drop_in"],
-				Timestamp: timestamp,
-				Tags:      tags,
-			},
-			producers.Datapoint{
-				Name:      "network.out.dropped",
-				Unit:      "count",
-				Value:     fields["drop_out"],
-				Timestamp: timestamp,
-				Tags:      tags,
-			},
-			producers.Datapoint{
-				Name:      "network.in.errors",
-				Unit:      "count",
-				Value:     fields["err_in"],
-				Timestamp: timestamp,
-				Tags:      tags,
-			},
-			producers.Datapoint{
-				Name:      "network.out.errors",
-				Unit:      "count",
-				Value:     fields["err_out"],
-				Timestamp: timestamp,
-				Tags:      tags,
-			},
-		},
+		Name:       producers.NodeMetricPrefix,
+		Datapoints: datapoints,
 		Dimensions: producers.Dimensions{
 			MesosID:   t.MesosID,
 			ClusterID: t.DCOSClusterID,
@@ -417,34 +393,29 @@ func (t *producerTranslator) processesMetricsMessage(m telegraf.Metric) producer
 func (t *producerTranslator) systemMetricsMessage(m telegraf.Metric) producers.MetricsMessage {
 	fields := m.Fields()
 	timestamp := timestampFromMetric(m)
+
+	mappings := []metricMapping{
+		metricMapping{"load1", "load.1min", "count"},
+		metricMapping{"load5", "load.5min", "count"},
+		metricMapping{"load15", "load.15min", "count"},
+		metricMapping{"uptime", "system.uptime", "count"},
+	}
+
+	datapoints := []producers.Datapoint{}
+	for _, m := range mappings {
+		if fields[m.telegrafName] != nil {
+			datapoints = append(datapoints, producers.Datapoint{
+				Name:      m.dcosMetricsName,
+				Unit:      m.unit,
+				Value:     fields[m.telegrafName],
+				Timestamp: timestamp,
+			})
+		}
+	}
+
 	return producers.MetricsMessage{
-		Name: producers.NodeMetricPrefix,
-		Datapoints: []producers.Datapoint{
-			producers.Datapoint{
-				Name:      "load.1min",
-				Unit:      "count",
-				Value:     fields["load1"],
-				Timestamp: timestamp,
-			},
-			producers.Datapoint{
-				Name:      "load.5min",
-				Unit:      "count",
-				Value:     fields["load5"],
-				Timestamp: timestamp,
-			},
-			producers.Datapoint{
-				Name:      "load.15min",
-				Unit:      "count",
-				Value:     fields["load15"],
-				Timestamp: timestamp,
-			},
-			producers.Datapoint{
-				Name:      "system.uptime",
-				Unit:      "count",
-				Value:     fields["uptime"],
-				Timestamp: timestamp,
-			},
-		},
+		Name:       producers.NodeMetricPrefix,
+		Datapoints: datapoints,
 		Dimensions: producers.Dimensions{
 			MesosID:   t.MesosID,
 			ClusterID: t.DCOSClusterID,
