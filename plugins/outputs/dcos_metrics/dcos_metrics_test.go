@@ -152,9 +152,8 @@ func setupDCOSMetrics() (DCOSMetrics, string, error) {
 		DCOSNodePrivateIP: "10.0.0.1",
 	}
 
-	if err := dm.Start(); err != nil {
-		return dm, serverURL, err
-	}
+	return dm, serverURL, dm.Start()
+}
 
 // findFreePort momentarily listens on :0, then closes the connection and
 // returns the port assigned
@@ -162,7 +161,6 @@ func findFreePort() int {
 	ln, _ := net.Listen("tcp", ":0")
 	ln.Close()
 
-	return dm, serverURL, nil
 	addr := ln.Addr().(*net.TCPAddr)
 	return addr.Port
 }
