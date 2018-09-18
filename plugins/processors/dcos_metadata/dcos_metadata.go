@@ -71,6 +71,9 @@ func (dm *DCOSMetadata) Apply(in ...telegraf.Metric) []telegraf.Metric {
 	// stale tracks whether our container cache is stale
 	stale := false
 
+	// track unrecognised container ids
+	unknown := map[string]bool{}
+
 	for _, metric := range in {
 		// Ignore metrics without container_id tag
 		if cid, ok := metric.Tags()["container_id"]; ok {
@@ -85,20 +88,27 @@ func (dm *DCOSMetadata) Apply(in ...telegraf.Metric) []telegraf.Metric {
 				}
 				metric.AddTag("task_name", c.taskName)
 			} else {
-				log.Printf("I! Information for container %q was not found in cache", cid)
+				unknown[cid] = true
 				stale = true
 			}
 		}
 	}
 
 	if stale {
-		go dm.refresh()
+		cids := []string{}
+		for cid, _ := range unknown {
+			cids = append(cids, cid)
+		}
+		go dm.refresh(cids...)
 	}
 
 	return in
 }
 
-func (dm *DCOSMetadata) refresh() {
+// refresh triggers a call to Mesos state. Calls to refresh are throttled by
+// the rate_limit option in configuration. Optionally, the container IDs which
+// caused the refresh may be passed in to be logged.
+func (dm *DCOSMetadata) refresh(cids ...string) {
 	dm.once.Do(func() {
 		// Subsequent calls to refresh() will be ignored until the RateLimit period
 		// has expired
@@ -106,6 +116,10 @@ func (dm *DCOSMetadata) refresh() {
 			time.Sleep(dm.RateLimit.Duration)
 			dm.once.Reset()
 		}()
+
+		for _, cid := range cids {
+			log.Printf("I! Metadata for container %q was not found in cache", cid)
+		}
 
 		client, err := dm.newClient()
 		if err != nil {
