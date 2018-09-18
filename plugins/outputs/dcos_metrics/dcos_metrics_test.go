@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math"
+	"net"
 	"net/http"
 	"testing"
 	"time"
@@ -139,7 +140,7 @@ func TestDCOSMetricsNaNValue(t *testing.T) {
 }
 
 func setupDCOSMetrics() (DCOSMetrics, string, error) {
-	serverHostPort := "localhost:50001"
+	serverHostPort := fmt.Sprintf("localhost:%d", findFreePort())
 	serverURL := fmt.Sprintf("http://%s", serverHostPort)
 
 	dm := DCOSMetrics{
@@ -155,5 +156,13 @@ func setupDCOSMetrics() (DCOSMetrics, string, error) {
 		return dm, serverURL, err
 	}
 
+// findFreePort momentarily listens on :0, then closes the connection and
+// returns the port assigned
+func findFreePort() int {
+	ln, _ := net.Listen("tcp", ":0")
+	ln.Close()
+
 	return dm, serverURL, nil
+	addr := ln.Addr().(*net.TCPAddr)
+	return addr.Port
 }
