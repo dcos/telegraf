@@ -619,6 +619,93 @@ func TestTranslate(t *testing.T) {
 				},
 			},
 		},
+
+		// System metrics may sometimes be missing. Those metrics should not be transmitted as nil.
+		testCase{
+			name: "system metrics with missing values",
+			input: metricParams{
+				name: "system",
+				fields: map[string]interface{}{
+					"load1":  uint64(123),
+					"load5":  uint64(1234),
+					"load15": uint64(12345),
+					// uptime would be expected here, but is missing
+				},
+				tm: tm,
+				tp: telegraf.Untyped,
+			},
+			output: producers.MetricsMessage{
+				Name: "dcos.metrics.node",
+				Dimensions: producers.Dimensions{
+					MesosID:   translator.MesosID,
+					ClusterID: translator.DCOSClusterID,
+					Hostname:  translator.DCOSNodePrivateIP,
+				},
+				Datapoints: []producers.Datapoint{
+					producers.Datapoint{
+						Name:      "load.1min",
+						Value:     uint64(123),
+						Unit:      "count",
+						Timestamp: timestamp,
+					},
+					producers.Datapoint{
+						Name:      "load.5min",
+						Value:     uint64(1234),
+						Unit:      "count",
+						Timestamp: timestamp,
+					},
+					producers.Datapoint{
+						Name:      "load.15min",
+						Value:     uint64(12345),
+						Unit:      "count",
+						Timestamp: timestamp,
+					},
+				},
+			},
+		},
+
+		// Network metrics may sometimes be missing. Those metrics should not be transmitted as nil.
+		testCase{
+			name: "network metrics with missing values",
+			input: metricParams{
+				name: "net",
+				fields: map[string]interface{}{
+					"bytes_recv": uint64(123),
+					"bytes_sent": uint64(1234),
+					// several other metrics are missing
+				},
+				tags: map[string]string{
+					"interface":  "dummy",
+					"irrelevant": "foo",
+				},
+				tm: tm,
+				tp: telegraf.Untyped,
+			},
+			output: producers.MetricsMessage{
+				Name: "dcos.metrics.node",
+				Dimensions: producers.Dimensions{
+					MesosID:   translator.MesosID,
+					ClusterID: translator.DCOSClusterID,
+					Hostname:  translator.DCOSNodePrivateIP,
+				},
+				Datapoints: []producers.Datapoint{
+					producers.Datapoint{
+						Name:      "network.in",
+						Value:     uint64(123),
+						Unit:      "bytes",
+						Timestamp: timestamp,
+						Tags:      map[string]string{"interface": "dummy"},
+					},
+					producers.Datapoint{
+						Name:      "network.out",
+						Value:     uint64(1234),
+						Unit:      "bytes",
+						Timestamp: timestamp,
+						Tags:      map[string]string{"interface": "dummy"},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
