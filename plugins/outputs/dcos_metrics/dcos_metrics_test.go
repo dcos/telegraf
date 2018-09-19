@@ -254,7 +254,7 @@ func waitFor(cond func() bool) error {
 	select {
 	case <-done:
 		return nil
-	case <-time.After(30 * time.Second):
+	case <-time.After(5 * time.Second):
 		return errors.New("timed out waiting for condition")
 	}
 }
