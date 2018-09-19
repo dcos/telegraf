@@ -84,10 +84,13 @@ func TestDCOSMetricsNaNValue(t *testing.T) {
 	}
 	defer dcosMetrics.Stop()
 
-	waitFor(func() bool {
+	err = waitFor(func() bool {
 		_, err := http.Get(url + "/health")
 		return err == nil
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	m, err := metric.New(
 		"prefix.foo",
@@ -155,10 +158,13 @@ func TestDCOSMetricsNilValue(t *testing.T) {
 	}
 	defer dcosMetrics.Stop()
 
-	waitFor(func() bool {
+	err = waitFor(func() bool {
 		_, err := http.Get(url + "/health")
 		return err == nil
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	m1, err := metric.New(
 		"dcos.metrics.node.system",
