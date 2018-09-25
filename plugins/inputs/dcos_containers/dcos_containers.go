@@ -2,7 +2,6 @@ package dcos_containers
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -127,7 +126,7 @@ func (dc *DCOSContainers) getContainers(ctx context.Context, cli calls.Sender) (
 
 	gc := r.GetGetContainers()
 	if gc == nil {
-		return gc, errors.New("the getContainers response from the mesos agent was empty")
+		return &agent.Response_GetContainers{Containers: []agent.Response_GetContainers_Container{}}, nil
 	}
 
 	return gc, nil
