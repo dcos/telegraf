@@ -78,11 +78,10 @@ test-all: fmtcheck vet
 	go test ./...
 
 test-race-dcos:
-	go test -race ./plugins/inputs/dcos_containers/
-	# The race detector reports data races for this plugin. See https://jira.mesosphere.com/browse/DCOS_OSS-4096.
-	#go test -race ./plugins/inputs/dcos_statsd/
-	go test -race ./plugins/outputs/dcos_metrics/
-	go test -race ./plugins/processors/dcos_metadata/
+	go test -v -race ./plugins/inputs/dcos_containers/
+	go test -v -race ./plugins/inputs/dcos_statsd/
+	go test -v -race ./plugins/outputs/dcos_metrics/
+	go test -v -race ./plugins/processors/dcos_metadata/
 
 package:
 	./scripts/build.py --package --platform=all --arch=all
