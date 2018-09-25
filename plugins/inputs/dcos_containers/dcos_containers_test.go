@@ -154,6 +154,15 @@ func TestSetIfNotNil(t *testing.T) {
 	})
 }
 
+func TestGetClient(t *testing.T) {
+	dc := DCOSContainers{}
+	client1, err1 := dc.getClient()
+	client2, err2 := dc.getClient()
+	assert.Nil(t, err1)
+	assert.Nil(t, err2)
+	assert.Equal(t, client1, client2)
+}
+
 // assertHasTimestamp checks that the specified measurement has the expected ts
 func assertHasTimestamp(t *testing.T, acc *testutil.Accumulator, measurement string, ts int64) {
 	expected := time.Unix(ts, 0)

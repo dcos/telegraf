@@ -39,6 +39,7 @@ type DCOSContainers struct {
 	Timeout           internal.Duration
 	CaCertificatePath string
 	IamConfigPath     string
+	client            *httpcli.Client
 }
 
 // measurement is a combination of fields and tags specific to those fields
@@ -83,7 +84,7 @@ func (dc *DCOSContainers) Description() string {
 // Gather takes in an accumulator and adds the metrics that the plugin gathers.
 // It is invoked on a schedule (default every 10s) by the telegraf runtime.
 func (dc *DCOSContainers) Gather(acc telegraf.Accumulator) error {
-	client, err := dc.newClient()
+	client, err := dc.getClient()
 	if err != nil {
 		return err
 	}
@@ -133,9 +134,13 @@ func (dc *DCOSContainers) getContainers(ctx context.Context, cli calls.Sender) (
 	return gc, nil
 }
 
-// newClient returns an httpcli client configured with the available levels of
+// getClient returns an httpcli client configured with the available levels of
 // TLS and IAM according to flags set in the config
-func (dc *DCOSContainers) newClient() (*httpcli.Client, error) {
+func (dc *DCOSContainers) getClient() (*httpcli.Client, error) {
+	if dc.client != nil {
+		return dc.client, nil
+	}
+
 	uri := dc.MesosAgentUrl + "/api/v1"
 	client := httpcli.New(httpcli.Endpoint(uri))
 	cfgOpts := []httpcli.ConfigOpt{}
@@ -162,6 +167,7 @@ func (dc *DCOSContainers) newClient() (*httpcli.Client, error) {
 	opts = append(opts, httpcli.Do(httpcli.With(cfgOpts...)))
 	client.With(opts...)
 
+	dc.client = client
 	return client, nil
 }
 
