@@ -197,6 +197,15 @@ func TestApply(t *testing.T) {
 	}
 }
 
+func TestGetClient(t *testing.T) {
+	dm := DCOSMetadata{}
+	client1, err1 := dm.getClient()
+	client2, err2 := dm.getClient()
+	assert.Nil(t, err1)
+	assert.Nil(t, err2)
+	assert.Equal(t, client1, client2)
+}
+
 // newMetric is a convenience method which allows us to define test cases at
 // package level without doing error handling
 func newMetric(name string, tags map[string]string, fields map[string]interface{}, tm time.Time) telegraf.Metric {

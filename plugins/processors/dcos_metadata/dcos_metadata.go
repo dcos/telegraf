@@ -32,6 +32,7 @@ type DCOSMetadata struct {
 	containers        map[string]containerInfo
 	mu                sync.Mutex
 	once              Once
+	client            *httpcli.Client
 }
 
 // containerInfo is a tuple of metadata which we use to map a container ID to
@@ -121,7 +122,7 @@ func (dm *DCOSMetadata) refresh(cids ...string) {
 			log.Printf("I! Metadata for container %q was not found in cache", cid)
 		}
 
-		client, err := dm.newClient()
+		client, err := dm.getClient()
 		if err != nil {
 			log.Printf("E! %s", err)
 			return
@@ -203,9 +204,12 @@ func (dm *DCOSMetadata) cache(gs *agent.Response_GetState) error {
 	return nil
 }
 
-// newClient returns an httpcli client configured with the available levels of
+// getClient returns an httpcli client configured with the available levels of
 // TLS and IAM according to flags set in the config
-func (dm *DCOSMetadata) newClient() (*httpcli.Client, error) {
+func (dm *DCOSMetadata) getClient() (*httpcli.Client, error) {
+	if dm.client != nil {
+		return dm.client, nil
+	}
 	uri := dm.MesosAgentUrl + "/api/v1"
 	client := httpcli.New(httpcli.Endpoint(uri))
 	cfgOpts := []httpcli.ConfigOpt{}
@@ -232,6 +236,7 @@ func (dm *DCOSMetadata) newClient() (*httpcli.Client, error) {
 	opts = append(opts, httpcli.Do(httpcli.With(cfgOpts...)))
 	client.With(opts...)
 
+	dm.client = client
 	return client, nil
 }
 
