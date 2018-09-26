@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/influxdata/telegraf/testutil"
@@ -83,6 +84,19 @@ func generateMetrics() {
 		"master/frameworks_disconnected",
 		"master/frameworks_inactive",
 		"master/outstanding_offers",
+		// framework offers
+		"master/frameworks/marathon/abc-123/calls",
+		"master/frameworks/marathon/abc-123/calls/accept",
+		"master/frameworks/marathon/abc-123/events",
+		"master/frameworks/marathon/abc-123/events/error",
+		"master/frameworks/marathon/abc-123/offers/sent",
+		"master/frameworks/marathon/abc-123/operations",
+		"master/frameworks/marathon/abc-123/operations/create",
+		"master/frameworks/marathon/abc-123/roles/*/suppressed",
+		"master/frameworks/marathon/abc-123/subscribed",
+		"master/frameworks/marathon/abc-123/tasks/active/task_killing",
+		"master/frameworks/marathon/abc-123/tasks/active/task_dropped",
+		"master/frameworks/marathon/abc-123/tasks/terminal/task_dropped",
 		// tasks
 		"master/tasks_error",
 		"master/tasks_failed",
@@ -290,7 +304,77 @@ func TestMesosMaster(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 
-	acc.AssertContainsFields(t, "mesos", masterMetrics)
+	expectedUntaggedMetrics := map[string]interface{}{}
+	for k, v := range masterMetrics {
+		if !strings.HasPrefix(k, "master/frameworks/") {
+			expectedUntaggedMetrics[k] = v
+		}
+	}
+
+	acc.AssertContainsFields(t, "mesos", expectedUntaggedMetrics)
+
+	frameworkFields := []map[string]interface{}{
+		{
+			"master/frameworks/calls_total":      masterMetrics["master/frameworks/marathon/abc-123/calls"],
+			"master/frameworks/events_total":     masterMetrics["master/frameworks/marathon/abc-123/events"],
+			"master/frameworks/operations_total": masterMetrics["master/frameworks/marathon/abc-123/operations"],
+			"master/frameworks/subscribed_total": masterMetrics["master/frameworks/marathon/abc-123/subscribed"],
+			"master/frameworks/offers/sent":      masterMetrics["master/frameworks/marathon/abc-123/offers/sent"],
+		},
+		{
+			"master/frameworks/tasks/active": masterMetrics["master/frameworks/marathon/abc-123/tasks/active/task_killing"],
+		},
+		{
+			"master/frameworks/tasks/active":   masterMetrics["master/frameworks/marathon/abc-123/tasks/active/task_dropped"],
+			"master/frameworks/tasks/terminal": masterMetrics["master/frameworks/marathon/abc-123/tasks/terminal/task_dropped"],
+		},
+		{
+			"master/frameworks/roles/suppressed": masterMetrics["master/frameworks/marathon/abc-123/roles/*/suppressed"],
+		},
+		{
+			"master/frameworks/calls": masterMetrics["master/frameworks/marathon/abc-123/calls/accept"],
+		},
+		{
+			"master/frameworks/events": masterMetrics["master/frameworks/marathon/abc-123/events/error"],
+		},
+		{
+			"master/frameworks/operations": masterMetrics["master/frameworks/marathon/abc-123/operations/create"],
+		},
+	}
+
+	frameworkTags := []map[string]string{
+		{
+			"encoded_framework_name": "marathon",
+		},
+		{
+			"encoded_framework_name": "marathon",
+			"task_state":             "task_killing",
+		},
+		{
+			"encoded_framework_name": "marathon",
+			"task_state":             "task_dropped",
+		},
+		{
+			"encoded_framework_name": "marathon",
+			"role_name":              "*",
+		},
+		{
+			"encoded_framework_name": "marathon",
+			"call_type":              "accept",
+		},
+		{
+			"encoded_framework_name": "marathon",
+			"event_type":             "error",
+		},
+		{
+			"encoded_framework_name": "marathon",
+			"operation_type":         "create",
+		},
+	}
+
+	for i := 0; i < len(frameworkFields); i++ {
+		acc.AssertContainsTaggedFields(t, "mesos", frameworkFields[i], frameworkTags[i])
+	}
 }
 
 func TestMasterFilter(t *testing.T) {

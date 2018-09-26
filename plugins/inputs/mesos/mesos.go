@@ -3,6 +3,7 @@ package mesos
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
@@ -39,6 +40,66 @@ type Mesos struct {
 	client      *http.Client
 	masterURLs  []*url.URL
 	slaveURLs   []*url.URL
+}
+
+// FrameworkField allows us to create a predictable hash from each unique
+// combination of framework name and tags
+type FrameworkField struct {
+	FrameworkName string
+	CallType      string
+	EventType     string
+	OperationType string
+	TaskState     string
+	RoleName      string
+	FieldName     string
+	Value         interface{}
+}
+
+func (ff *FrameworkField) hash() string {
+	buffer := ff.FrameworkName
+
+	if ff.CallType != "" {
+		buffer += "_" + ff.CallType
+	}
+	if ff.EventType != "" {
+		buffer += "_" + ff.EventType
+	}
+	if ff.OperationType != "" {
+		buffer += "_" + ff.OperationType
+	}
+	if ff.TaskState != "" {
+		buffer += "_" + ff.TaskState
+	}
+	if ff.RoleName != "" {
+		buffer += "_" + ff.RoleName
+	}
+
+	return buffer
+}
+
+func (ff *FrameworkField) tags() map[string]string {
+	tags := map[string]string{}
+
+	if ff.FrameworkName != "" {
+		tags["encoded_framework_name"] = ff.FrameworkName
+	}
+	if ff.CallType != "" {
+		tags["call_type"] = ff.CallType
+	}
+	if ff.EventType != "" {
+		tags["event_type"] = ff.EventType
+	}
+	if ff.OperationType != "" {
+		tags["operation_type"] = ff.OperationType
+	}
+	if ff.TaskState != "" {
+		tags["task_state"] = ff.TaskState
+	}
+	if ff.RoleName != "" {
+		tags["role_name"] = ff.RoleName
+	}
+
+	return tags
 }
 
 var allMetrics = map[Role][]string{
@@ -593,7 +654,78 @@ func (m *Mesos) gatherMainMetrics(u *url.URL, role Role, acc telegraf.Accumulato
 		}
 	}
 
+	frameworkFields := map[string][]FrameworkField{}
+	frameworkTags := map[string]map[string]string{}
+
+	for metricName, val := range jf.Fields {
+		if !strings.HasPrefix(metricName, "master/frameworks/") {
+			continue
+		}
+
+		parts := strings.Split(metricName, "/")
+		if len(parts) < 5 {
+			continue
+		}
+
+		ff := FrameworkField{}
+		ff.Value = val
+		ff.FrameworkName = parts[2]
+
+		if len(parts) == 5 {
+			// e.g. /master/frameworks/calls_total
+			ff.FieldName = fmt.Sprintf("%s/%s/%s_total", parts[0], parts[1], parts[4])
+		} else {
+			switch parts[4] {
+			case "offers":
+				// e.g. /master/frameworks/offers/sent
+				ff.FieldName = fmt.Sprintf("%s/%s/%s/%s", parts[0], parts[1], parts[4], parts[5])
+			case "calls":
+				// e.g. /master/frameworks/calls/decline
+				ff.FieldName = fmt.Sprintf("%s/%s/%s", parts[0], parts[1], parts[4])
+				ff.CallType = parts[5]
+			case "events":
+				// e.g. /master/frameworks/events/heartbeat
+				ff.FieldName = fmt.Sprintf("%s/%s/%s", parts[0], parts[1], parts[4])
+				ff.EventType = parts[5]
+			case "operations":
+				// e.g. /master/frameworks/operations/create
+				ff.FieldName = fmt.Sprintf("%s/%s/%s", parts[0], parts[1], parts[4])
+				ff.OperationType = parts[5]
+			case "tasks":
+				// e.g. /master/frameworks/tasks/active/running
+				ff.FieldName = fmt.Sprintf("%s/%s/%s/%s", parts[0], parts[1], parts[4], parts[5])
+				ff.TaskState = parts[6]
+			case "roles":
+				// e.g. /master/frameworks/roles/public
+				ff.FieldName = fmt.Sprintf("%s/%s/%s/%s", parts[0], parts[1], parts[4], parts[6])
+				ff.RoleName = parts[5]
+			default:
+				log.Printf("I! Unexpected metric name %s", parts[4])
+			}
+		}
+
+		ffh := ff.hash()
+		if _, ok := frameworkFields[ffh]; !ok {
+			frameworkFields[ffh] = []FrameworkField{}
+		}
+		frameworkFields[ffh] = append(frameworkFields[ffh], ff)
+
+		if _, ok := frameworkTags[ffh]; !ok {
+			frameworkTags[ffh] = ff.tags()
+		}
+
+		delete(jf.Fields, metricName)
+	}
+
 	acc.AddFields("mesos", jf.Fields, tags)
+
+	for ffh, ffs := range frameworkFields {
+		fields := map[string]interface{}{}
+		for _, ff := range ffs {
+			fields[ff.FieldName] = ff.Value
+		}
+		acc.AddFields("mesos", fields, frameworkTags[ffh])
+	}
 
 	return nil
 }
