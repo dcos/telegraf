@@ -158,6 +158,40 @@ func generateMetrics() {
 		"registrar/state_store_ms/p99",
 		"registrar/state_store_ms/p999",
 		"registrar/state_store_ms/p9999",
+		// allocator
+		"allocator/mesos/allocation_run_ms",
+		"allocator/mesos/allocation_run_ms/count",
+		"allocator/mesos/allocation_run_ms/max",
+		"allocator/mesos/allocation_run_ms/min",
+		"allocator/mesos/allocation_run_ms/p50",
+		"allocator/mesos/allocation_run_ms/p90",
+		"allocator/mesos/allocation_run_ms/p95",
+		"allocator/mesos/allocation_run_ms/p99",
+		"allocator/mesos/allocation_run_ms/p999",
+		"allocator/mesos/allocation_run_ms/p9999",
+		"allocator/mesos/allocation_runs",
+		"allocator/mesos/allocation_run_latency_ms",
+		"allocator/mesos/allocation_run_latency_ms/count",
+		"allocator/mesos/allocation_run_latency_ms/max",
+		"allocator/mesos/allocation_run_latency_ms/min",
+		"allocator/mesos/allocation_run_latency_ms/p50",
+		"allocator/mesos/allocation_run_latency_ms/p90",
+		"allocator/mesos/allocation_run_latency_ms/p95",
+		"allocator/mesos/allocation_run_latency_ms/p99",
+		"allocator/mesos/allocation_run_latency_ms/p999",
+		"allocator/mesos/allocation_run_latency_ms/p9999",
+		"allocator/mesos/roles/*/shares/dominant",
+		"allocator/mesos/event_queue_dispatches",
+		"allocator/mesos/offer_filters/roles/*/active",
+		"allocator/mesos/quota/roles/*/resources/disk/offered_or_allocated",
+		"allocator/mesos/quota/roles/*/resources/mem/guarantee",
+		"allocator/mesos/quota/roles/*/resources/disk/guarantee",
+		"allocator/mesos/resources/cpus/offered_or_allocated",
+		"allocator/mesos/resources/cpus/total",
+		"allocator/mesos/resources/disk/offered_or_allocated",
+		"allocator/mesos/resources/disk/total",
+		"allocator/mesos/resources/mem/offered_or_allocated",
+		"allocator/mesos/resources/mem/total",
 	}
 
 	for _, k := range metricNames {
@@ -306,7 +340,8 @@ func TestMesosMaster(t *testing.T) {
 
 	expectedUntaggedMetrics := map[string]interface{}{}
 	for k, v := range masterMetrics {
-		if !strings.HasPrefix(k, "master/frameworks/") {
+		parts := strings.Split(k, "/")
+		if !strings.HasPrefix(k, "master/frameworks/") && (!strings.HasPrefix(k, "allocator/") || len(parts) <= 5) {
 			expectedUntaggedMetrics[k] = v
 		}
 	}
@@ -314,6 +349,7 @@ func TestMesosMaster(t *testing.T) {
 	acc.AssertContainsFields(t, "mesos", expectedUntaggedMetrics)
 
 	frameworkFields := []map[string]interface{}{
+		// framework offers
 		{
 			"master/frameworks/calls_total":      masterMetrics["master/frameworks/marathon/abc-123/calls"],
 			"master/frameworks/events_total":     masterMetrics["master/frameworks/marathon/abc-123/events"],
@@ -340,35 +376,98 @@ func TestMesosMaster(t *testing.T) {
 		{
 			"master/frameworks/operations": masterMetrics["master/frameworks/marathon/abc-123/operations/create"],
 		},
+		// allocator
+		{
+			"allocator/mesos/roles/shares/dominant":      masterMetrics["allocator/mesos/roles/*/shares/dominant"],
+			"allocator/mesos/offer_filters/roles/active": masterMetrics["allocator/mesos/offer_filters/roles/*/active"],
+		},
+		{
+			"allocator/mesos/quota/roles/resources/offered_or_allocated": masterMetrics["allocator/mesos/quota/roles/*/resources/disk/offered_or_allocated"],
+			"allocator/mesos/quota/roles/resources/guarantee":            masterMetrics["allocator/mesos/quota/roles/*/resources/disk/guarantee"],
+		},
+		{
+			"allocator/mesos/quota/roles/resources/guarantee": masterMetrics["allocator/mesos/quota/roles/*/resources/mem/guarantee"],
+		},
 	}
 
 	frameworkTags := []map[string]string{
 		{
+			"server":         m.masterURLs[0].Hostname(),
+			"url":            masterTestServer.URL,
+			"role":           "master",
+			"state":          "leader",
 			"framework_name": "marathon",
 		},
 		{
+			"server":         m.masterURLs[0].Hostname(),
+			"url":            masterTestServer.URL,
+			"role":           "master",
+			"state":          "leader",
 			"framework_name": "marathon",
 			"task_state":     "task_killing",
 		},
 		{
+			"server":         m.masterURLs[0].Hostname(),
+			"url":            masterTestServer.URL,
+			"role":           "master",
+			"state":          "leader",
 			"framework_name": "marathon",
 			"task_state":     "task_dropped",
 		},
 		{
+			"server":         m.masterURLs[0].Hostname(),
+			"url":            masterTestServer.URL,
+			"role":           "master",
+			"state":          "leader",
 			"framework_name": "marathon",
 			"role_name":      "*",
 		},
 		{
+			"server":         m.masterURLs[0].Hostname(),
+			"url":            masterTestServer.URL,
+			"role":           "master",
+			"state":          "leader",
 			"framework_name": "marathon",
 			"call_type":      "accept",
 		},
 		{
+			"server":         m.masterURLs[0].Hostname(),
+			"url":            masterTestServer.URL,
+			"role":           "master",
+			"state":          "leader",
 			"framework_name": "marathon",
 			"event_type":     "error",
 		},
 		{
+			"server":         m.masterURLs[0].Hostname(),
+			"url":            masterTestServer.URL,
+			"role":           "master",
+			"state":          "leader",
 			"framework_name": "marathon",
 			"operation_type": "create",
+		},
+		{
+			"server":    m.masterURLs[0].Hostname(),
+			"url":       masterTestServer.URL,
+			"role":      "master",
+			"state":     "leader",
+			"role_name": "*",
+		},
+		{
+			"server":    m.masterURLs[0].Hostname(),
+			"url":       masterTestServer.URL,
+			"role":      "master",
+			"state":     "leader",
+			"role_name": "*",
+			"resource":  "disk",
+		},
+		{
+			"server":    m.masterURLs[0].Hostname(),
+			"url":       masterTestServer.URL,
+			"role":      "master",
+			"state":     "leader",
+			"role_name": "*",
+			"resource":  "mem",
 		},
 	}
 

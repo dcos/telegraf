@@ -42,9 +42,9 @@ type Mesos struct {
 	slaveURLs   []*url.URL
 }
 
-// FrameworkField allows us to create a predictable hash from each unique
-// combination of framework name and tags
-type FrameworkField struct {
+// TaggedField allows us to create a predictable hash from each unique
+// combination of tags
+type TaggedField struct {
 	FrameworkName string
 	CallType      string
 	EventType     string
@@ -52,58 +52,68 @@ type FrameworkField struct {
 	TaskState     string
 	RoleName      string
 	FieldName     string
+	Resource      string
 	Value         interface{}
 }
 
-func (ff *FrameworkField) hash() string {
-	buffer := ff.FrameworkName
+func (tf *TaggedField) hash() string {
+	buffer := "tf"
 
-	if ff.CallType != "" {
-		buffer += "_" + ff.CallType
+	if tf.FrameworkName != "" {
+		buffer += "_" + tf.FrameworkName
 	}
-	if ff.EventType != "" {
-		buffer += "_" + ff.EventType
+	if tf.CallType != "" {
+		buffer += "_" + tf.CallType
 	}
-	if ff.OperationType != "" {
-		buffer += "_" + ff.OperationType
+	if tf.EventType != "" {
+		buffer += "_" + tf.EventType
 	}
-	if ff.TaskState != "" {
-		buffer += "_" + ff.TaskState
+	if tf.OperationType != "" {
+		buffer += "_" + tf.OperationType
 	}
-	if ff.RoleName != "" {
-		buffer += "_" + ff.RoleName
+	if tf.TaskState != "" {
+		buffer += "_" + tf.TaskState
+	}
+	if tf.RoleName != "" {
+		buffer += "_" + tf.RoleName
+	}
+	if tf.Resource != "" {
+		buffer += "_" + tf.Resource
 	}
 
 	return buffer
 }
 
-func (ff *FrameworkField) tags() map[string]string {
+func (tf *TaggedField) tags() map[string]string {
 	tags := map[string]string{}
 
-	if ff.FrameworkName != "" {
-		tags["framework_name"] = ff.FrameworkName
+	if tf.FrameworkName != "" {
+		tags["framework_name"] = tf.FrameworkName
 	}
-	if ff.CallType != "" {
-		tags["call_type"] = ff.CallType
+	if tf.CallType != "" {
+		tags["call_type"] = tf.CallType
 	}
-	if ff.EventType != "" {
-		tags["event_type"] = ff.EventType
+	if tf.EventType != "" {
+		tags["event_type"] = tf.EventType
 	}
-	if ff.OperationType != "" {
-		tags["operation_type"] = ff.OperationType
+	if tf.OperationType != "" {
+		tags["operation_type"] = tf.OperationType
 	}
-	if ff.TaskState != "" {
-		tags["task_state"] = ff.TaskState
+	if tf.TaskState != "" {
+		tags["task_state"] = tf.TaskState
 	}
-	if ff.RoleName != "" {
-		tags["role_name"] = ff.RoleName
+	if tf.RoleName != "" {
+		tags["role_name"] = tf.RoleName
+	}
+	if tf.Resource != "" {
+		tags["resource"] = tf.Resource
 	}
 
 	return tags
 }
 
 var allMetrics = map[Role][]string{
-	MASTER: []string{"resources", "master", "system", "agents", "frameworks", "framework_offers", "tasks", "messages", "evqueue", "registrar"},
+	MASTER: []string{"resources", "master", "system", "agents", "frameworks", "framework_offers", "tasks", "messages", "evqueue", "registrar", "allocator"},
 	SLAVE:  []string{"resources", "agent", "system", "executors", "tasks", "messages"},
 }
 
@@ -124,6 +134,7 @@ var sampleConfig = `
     "messages",
     "evqueue",
     "registrar",
+    "allocator",
   ]
   ## A list of Mesos slaves, default is []
   # slaves = []
@@ -377,10 +388,11 @@ func getMetrics(role Role, group string) []string {
 			"master/outstanding_offers",
 		}
 
-		// this is empty because filtering is done in gatherMainMetrics
-		// based on presence of "framework_offers" in MasterCols.
-		// this line is included to prevent the "unknown" info log below
+		// These groups are empty because filtering is done in gatherMainMetrics
+		// based on presence of "framework_offers"/"allocator" in MasterCols.
+		// These lines are included to prevent the "unknown" info log below.
 		m["framework_offers"] = []string{}
+		m["allocator"] = []string{}
 
 		m["tasks"] = []string{
 			"master/tasks_error",
@@ -660,90 +672,117 @@ func (m *Mesos) gatherMainMetrics(u *url.URL, role Role, acc telegraf.Accumulato
 		}
 	}
 
-	var includeFrameworkOffers bool
+	var includeTaggedFields bool
 	for _, col := range m.MasterCols {
-		if col == "framework_offers" {
-			includeFrameworkOffers = true
+		if col == "framework_offers" || col == "allocator" {
+			includeTaggedFields = true
 			break
 		}
 	}
 
-	frameworkFields := map[string][]FrameworkField{}
-	frameworkTags := map[string]map[string]string{}
+	taggedFields := map[string][]TaggedField{}
+	extraTags := map[string]map[string]string{}
 
-	if includeFrameworkOffers {
+	if includeTaggedFields {
 		for metricName, val := range jf.Fields {
-			if !strings.HasPrefix(metricName, "master/frameworks/") {
+			if !strings.HasPrefix(metricName, "master/frameworks/") && !strings.HasPrefix(metricName, "allocator/") {
 				continue
 			}
 
 			parts := strings.Split(metricName, "/")
-			if len(parts) < 5 {
+			if (parts[0] == "master" && len(parts) < 5) || (parts[0] == "allocator" && len(parts) <= 5) {
 				continue
 			}
 
-			ff := FrameworkField{}
-			ff.Value = val
-			ff.FrameworkName = parts[2]
-
-			if len(parts) == 5 {
-				// e.g. /master/frameworks/calls_total
-				ff.FieldName = fmt.Sprintf("%s/%s/%s_total", parts[0], parts[1], parts[4])
-			} else {
-				switch parts[4] {
-				case "offers":
-					// e.g. /master/frameworks/offers/sent
-					ff.FieldName = fmt.Sprintf("%s/%s/%s/%s", parts[0], parts[1], parts[4], parts[5])
-				case "calls":
-					// e.g. /master/frameworks/calls/decline
-					ff.FieldName = fmt.Sprintf("%s/%s/%s", parts[0], parts[1], parts[4])
-					ff.CallType = parts[5]
-				case "events":
-					// e.g. /master/frameworks/events/heartbeat
-					ff.FieldName = fmt.Sprintf("%s/%s/%s", parts[0], parts[1], parts[4])
-					ff.EventType = parts[5]
-				case "operations":
-					// e.g. /master/frameworks/operations/create
-					ff.FieldName = fmt.Sprintf("%s/%s/%s", parts[0], parts[1], parts[4])
-					ff.OperationType = parts[5]
-				case "tasks":
-					// e.g. /master/frameworks/tasks/active/running
-					ff.FieldName = fmt.Sprintf("%s/%s/%s/%s", parts[0], parts[1], parts[4], parts[5])
-					ff.TaskState = parts[6]
-				case "roles":
-					// e.g. /master/frameworks/roles/public
-					ff.FieldName = fmt.Sprintf("%s/%s/%s/%s", parts[0], parts[1], parts[4], parts[6])
-					ff.RoleName = parts[5]
-				default:
-					log.Printf("I! Unexpected metric name %s", parts[4])
-				}
-			}
-
-			ffh := ff.hash()
-			if _, ok := frameworkFields[ffh]; !ok {
-				frameworkFields[ffh] = []FrameworkField{}
-			}
-			frameworkFields[ffh] = append(frameworkFields[ffh], ff)
-
-			if _, ok := frameworkTags[ffh]; !ok {
-				frameworkTags[ffh] = ff.tags()
-			}
-
+			handleTaggedFields(parts, val, taggedFields, extraTags)
 			delete(jf.Fields, metricName)
 		}
 	}
 
 	acc.AddFields("mesos", jf.Fields, tags)
 
-	for ffh, ffs := range frameworkFields {
+	for tfh, tfs := range taggedFields {
 		fields := map[string]interface{}{}
-		for _, ff := range ffs {
-			fields[ff.FieldName] = ff.Value
+		for _, tf := range tfs {
+			fields[tf.FieldName] = tf.Value
 		}
-		acc.AddFields("mesos", fields, frameworkTags[ffh])
+		for k, v := range tags {
+			extraTags[tfh][k] = v
+		}
+
+		acc.AddFields("mesos", fields, extraTags[tfh])
 	}
 
 	return nil
+}
+
+func handleTaggedFields(parts []string, val interface{}, taggedFields map[string][]TaggedField, extraTags map[string]map[string]string) {
+	tf := TaggedField{}
+	tf.Value = val
+
+	if parts[0] == "master" {
+		tf.FrameworkName = parts[2]
+		if len(parts) == 5 {
+			// e.g. /master/frameworks/calls_total
+			tf.FieldName = fmt.Sprintf("%s/%s/%s_total", parts[0], parts[1], parts[4])
+		} else {
+			switch parts[4] {
+			case "offers":
+				// e.g. /master/frameworks/offers/sent
+				tf.FieldName = fmt.Sprintf("%s/%s/%s/%s", parts[0], parts[1], parts[4], parts[5])
+			case "calls":
+				// e.g. /master/frameworks/calls/decline
+				tf.FieldName = fmt.Sprintf("%s/%s/%s", parts[0], parts[1], parts[4])
+				tf.CallType = parts[5]
+			case "events":
+				// e.g. /master/frameworks/events/heartbeat
+				tf.FieldName = fmt.Sprintf("%s/%s/%s", parts[0], parts[1], parts[4])
+				tf.EventType = parts[5]
+			case "operations":
+				// e.g. /master/frameworks/operations/create
+				tf.FieldName = fmt.Sprintf("%s/%s/%s", parts[0], parts[1], parts[4])
+				tf.OperationType = parts[5]
+			case "tasks":
+				// e.g. /master/frameworks/tasks/active/running
+				tf.FieldName = fmt.Sprintf("%s/%s/%s/%s", parts[0], parts[1], parts[4], parts[5])
+				tf.TaskState = parts[6]
+			case "roles":
+				// e.g. /master/frameworks/roles/public
+				tf.FieldName = fmt.Sprintf("%s/%s/%s/%s", parts[0], parts[1], parts[4], parts[6])
+				tf.RoleName = parts[5]
+			default:
+				log.Printf("I! Unexpected metric name %s", parts[4])
+			}
+		}
+	} else if parts[0] == "allocator" {
+		switch parts[2] {
+		case "roles":
+			// e.g. /allocator/mesos/roles/shares/dominant
+			tf.FieldName = fmt.Sprintf("%s/%s/%s/%s/%s", parts[0], parts[1], parts[2], parts[4], parts[5])
+			tf.RoleName = parts[3]
+		case "offer_filters":
+			// e.g. /allocator/mesos/offer_filters/roles/active
+			tf.FieldName = fmt.Sprintf("%s/%s/%s/%s/%s", parts[0], parts[1], parts[2], parts[3], parts[5])
+			tf.RoleName = parts[4]
+		case "quota":
+			// e.g. /allocator/mesos/quota/roles/resources/offered_or_allocated
+			tf.FieldName = fmt.Sprintf("%s/%s/%s/%s/%s/%s", parts[0], parts[1], parts[2], parts[3], parts[5], parts[7])
+			tf.RoleName = parts[4]
+			tf.Resource = parts[6]
+		default:
+			log.Printf("I! Unexpected metric name %s", parts[2])
+		}
+	}
+
+	tfh := tf.hash()
+	if _, ok := taggedFields[tfh]; !ok {
+		taggedFields[tfh] = []TaggedField{}
+	}
+	taggedFields[tfh] = append(taggedFields[tfh], tf)
+
+	if _, ok := extraTags[tfh]; !ok {
+		extraTags[tfh] = tf.tags()
+	}
 }
 
 func init() {
