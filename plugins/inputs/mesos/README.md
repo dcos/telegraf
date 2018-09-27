@@ -189,6 +189,40 @@ Mesos master metric groups
     - registrar/state_store_ms/p999
     - registrar/state_store_ms/p9999
 
+- allocator
+    - allocator/mesos/allocation_run_ms
+    - allocator/mesos/allocation_run_ms/count
+    - allocator/mesos/allocation_run_ms/max
+    - allocator/mesos/allocation_run_ms/min
+    - allocator/mesos/allocation_run_ms/p50
+    - allocator/mesos/allocation_run_ms/p90
+    - allocator/mesos/allocation_run_ms/p95
+    - allocator/mesos/allocation_run_ms/p99
+    - allocator/mesos/allocation_run_ms/p999
+    - allocator/mesos/allocation_run_ms/p9999
+    - allocator/mesos/allocation_runs
+    - allocator/mesos/allocation_run_latency_ms
+    - allocator/mesos/allocation_run_latency_ms/count
+    - allocator/mesos/allocation_run_latency_ms/max
+    - allocator/mesos/allocation_run_latency_ms/min
+    - allocator/mesos/allocation_run_latency_ms/p50
+    - allocator/mesos/allocation_run_latency_ms/p90
+    - allocator/mesos/allocation_run_latency_ms/p95
+    - allocator/mesos/allocation_run_latency_ms/p99
+    - allocator/mesos/allocation_run_latency_ms/p999
+    - allocator/mesos/allocation_run_latency_ms/p9999
+    - allocator/mesos/roles/shares/dominant
+    - allocator/mesos/event_queue_dispatches
+    - allocator/mesos/offer_filters/roles/active
+    - allocator/mesos/quota/roles/resources/offered_or_allocated
+    - allocator/mesos/quota/roles/resources/guarantee
+    - allocator/mesos/resources/cpus/offered_or_allocated
+    - allocator/mesos/resources/cpus/total
+    - allocator/mesos/resources/disk/offered_or_allocated
+    - allocator/mesos/resources/disk/total
+    - allocator/mesos/resources/mem/offered_or_allocated
+    - allocator/mesos/resources/mem/total
+
 Mesos slave metric groups
 - resources
     - slave/cpus_percent

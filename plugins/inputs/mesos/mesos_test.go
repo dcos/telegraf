@@ -391,6 +391,7 @@ func TestMesosMaster(t *testing.T) {
 	}
 
 	frameworkTags := []map[string]string{
+		// framework offers
 		{
 			"server":         m.masterURLs[0].Hostname(),
 			"url":            masterTestServer.URL,
@@ -446,6 +447,7 @@ func TestMesosMaster(t *testing.T) {
 			"framework_name": "marathon",
 			"operation_type": "create",
 		},
+		// allocator
 		{
 			"server":    m.masterURLs[0].Hostname(),
 			"url":       masterTestServer.URL,
