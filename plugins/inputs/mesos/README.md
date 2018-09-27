@@ -108,6 +108,22 @@ Mesos master metric groups
     - master/frameworks_inactive
     - master/outstanding_offers
 
+- framework offers
+    - master/frameworks/subscribed
+    - master/frameworks/calls_total
+    - master/frameworks/calls
+    - master/frameworks/events_total
+    - master/frameworks/events
+    - master/frameworks/operations_total
+    - master/frameworks/operations
+    - master/frameworks/tasks/active
+    - master/frameworks/tasks/terminal
+    - master/frameworks/offers/sent
+    - master/frameworks/offers/accepted
+    - master/frameworks/offers/declined
+    - master/frameworks/offers/rescinded
+    - master/frameworks/roles/suppressed
+
 - tasks
     - master/tasks_error
     - master/tasks_failed

@@ -344,31 +344,31 @@ func TestMesosMaster(t *testing.T) {
 
 	frameworkTags := []map[string]string{
 		{
-			"encoded_framework_name": "marathon",
+			"framework_name": "marathon",
 		},
 		{
-			"encoded_framework_name": "marathon",
-			"task_state":             "task_killing",
+			"framework_name": "marathon",
+			"task_state":     "task_killing",
 		},
 		{
-			"encoded_framework_name": "marathon",
-			"task_state":             "task_dropped",
+			"framework_name": "marathon",
+			"task_state":     "task_dropped",
 		},
 		{
-			"encoded_framework_name": "marathon",
-			"role_name":              "*",
+			"framework_name": "marathon",
+			"role_name":      "*",
 		},
 		{
-			"encoded_framework_name": "marathon",
-			"call_type":              "accept",
+			"framework_name": "marathon",
+			"call_type":      "accept",
 		},
 		{
-			"encoded_framework_name": "marathon",
-			"event_type":             "error",
+			"framework_name": "marathon",
+			"event_type":     "error",
 		},
 		{
-			"encoded_framework_name": "marathon",
-			"operation_type":         "create",
+			"framework_name": "marathon",
+			"operation_type": "create",
 		},
 	}
 
