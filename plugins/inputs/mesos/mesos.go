@@ -702,6 +702,11 @@ func (m *Mesos) gatherMainMetrics(u *url.URL, role Role, acc telegraf.Accumulato
 
 			tf := generateTaggedField(parts, val)
 
+			if len(tf.tags()) == 0 {
+				// indicates no extra tags were added
+				continue
+			}
+
 			tfh := tf.hash()
 			if _, ok := taggedFields[tfh]; !ok {
 				taggedFields[tfh] = []TaggedField{}
@@ -768,7 +773,9 @@ func generateTaggedField(parts []string, val interface{}) TaggedField {
 				tf.FieldName = fmt.Sprintf("%s/%s/%s/%s", parts[0], parts[1], parts[4], parts[6])
 				tf.RoleName = parts[5]
 			default:
+				// default to excluding framework name and id, but otherwise leaving path as is
 				log.Printf("I! Unexpected metric name %s", parts[4])
+				tf.FieldName = fmt.Sprintf("%s/%s/%s", parts[0], parts[1], strings.Join(parts[4:], "/"))
 			}
 		}
 	} else if parts[0] == "allocator" {
@@ -787,7 +794,9 @@ func generateTaggedField(parts []string, val interface{}) TaggedField {
 			tf.RoleName = parts[4]
 			tf.Resource = parts[6]
 		default:
+			// default to leaving path as is
 			log.Printf("I! Unexpected metric name %s", parts[2])
+			tf.FieldName = strings.Join(parts, "/")
 		}
 	}
 

@@ -97,6 +97,7 @@ func generateMetrics() {
 		"master/frameworks/marathon/abc-123/tasks/active/task_killing",
 		"master/frameworks/marathon/abc-123/tasks/active/task_dropped",
 		"master/frameworks/marathon/abc-123/tasks/terminal/task_dropped",
+		"master/frameworks/marathon/abc-123/unknown/unknown", // test case for unknown metric type
 		// tasks
 		"master/tasks_error",
 		"master/tasks_failed",
@@ -192,6 +193,7 @@ func generateMetrics() {
 		"allocator/mesos/resources/disk/total",
 		"allocator/mesos/resources/mem/offered_or_allocated",
 		"allocator/mesos/resources/mem/total",
+		"allocator/mesos/unknown/unknown/unknown/unknown", // test case for unknown metric type
 	}
 
 	for _, k := range metricNames {
@@ -345,12 +347,16 @@ func TestMesosMaster(t *testing.T) {
 			expectedUntaggedMetrics[k] = v
 		}
 	}
+	// for unknown allocator metric type test case, expect no additional tags
+	expectedUntaggedMetrics["allocator/mesos/unknown/unknown/unknown/unknown"] = masterMetrics["allocator/mesos/unknown/unknown/unknown/unknown"]
 
 	acc.AssertContainsFields(t, "mesos", expectedUntaggedMetrics)
 
 	frameworkFields := []map[string]interface{}{
 		// framework offers
 		{
+			// "unknown" metric type should still contain framework_name tag
+			"master/frameworks/unknown/unknown":  masterMetrics["master/frameworks/marathon/abc-123/unknown/unknown"],
 			"master/frameworks/calls_total":      masterMetrics["master/frameworks/marathon/abc-123/calls"],
 			"master/frameworks/events_total":     masterMetrics["master/frameworks/marathon/abc-123/events"],
 			"master/frameworks/operations_total": masterMetrics["master/frameworks/marathon/abc-123/operations"],
