@@ -707,7 +707,8 @@ func (m *Mesos) gatherMainMetrics(u *url.URL, role Role, acc telegraf.Accumulato
 			continue
 		}
 
-		tf := generateTaggedField(parts, val)
+		tf := generateTaggedField(parts)
+		tf.Value = val
 
 		if len(tf.tags()) == 0 {
 			// indicates no extra tags were added
@@ -744,9 +745,8 @@ func (m *Mesos) gatherMainMetrics(u *url.URL, role Role, acc telegraf.Accumulato
 	return nil
 }
 
-func generateTaggedField(parts []string, val interface{}) TaggedField {
+func generateTaggedField(parts []string) TaggedField {
 	tf := TaggedField{}
-	tf.Value = val
 
 	if parts[0] == "master" {
 		tf.FrameworkName = parts[2]
