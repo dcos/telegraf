@@ -56,7 +56,7 @@ type TaggedField struct {
 	Value         interface{}
 }
 
-func (tf *TaggedField) hash() string {
+func (tf TaggedField) hash() string {
 	buffer := "tf"
 
 	if tf.FrameworkName != "" {
@@ -84,8 +84,10 @@ func (tf *TaggedField) hash() string {
 	return buffer
 }
 
-func (tf *TaggedField) tags() map[string]string {
-	tags := map[string]string{}
+type fieldTags map[string]string
+
+func (tf TaggedField) tags() fieldTags {
+	tags := fieldTags{}
 
 	if tf.FrameworkName != "" {
 		tags["framework_name"] = tf.FrameworkName
@@ -681,7 +683,7 @@ func (m *Mesos) gatherMainMetrics(u *url.URL, role Role, acc telegraf.Accumulato
 	}
 
 	taggedFields := map[string][]TaggedField{}
-	extraTags := map[string]map[string]string{}
+	extraTags := map[string]fieldTags{}
 
 	if includeTaggedFields {
 		for metricName, val := range jf.Fields {
@@ -691,10 +693,25 @@ func (m *Mesos) gatherMainMetrics(u *url.URL, role Role, acc telegraf.Accumulato
 
 			parts := strings.Split(metricName, "/")
 			if (parts[0] == "master" && len(parts) < 5) || (parts[0] == "allocator" && len(parts) <= 5) {
+				// All framework offers metrics have at least 5 parts.
+				// All allocator metrics with <= 5 parts can be sent as is and does not pull
+				// any params out into tags.
+				// (e.g. allocator/mesos/allocation_run_ms/count vs allocator/mesos/roles/<role>/shares/dominant)
 				continue
 			}
 
-			handleTaggedFields(parts, val, taggedFields, extraTags)
+			tf := generateTaggedField(parts, val)
+
+			tfh := tf.hash()
+			if _, ok := taggedFields[tfh]; !ok {
+				taggedFields[tfh] = []TaggedField{}
+			}
+			taggedFields[tfh] = append(taggedFields[tfh], tf)
+
+			if _, ok := extraTags[tfh]; !ok {
+				extraTags[tfh] = tf.tags()
+			}
+
 			delete(jf.Fields, metricName)
 		}
 	}
@@ -716,7 +733,7 @@ func (m *Mesos) gatherMainMetrics(u *url.URL, role Role, acc telegraf.Accumulato
 	return nil
 }
 
-func handleTaggedFields(parts []string, val interface{}, taggedFields map[string][]TaggedField, extraTags map[string]map[string]string) {
+func generateTaggedField(parts []string, val interface{}) TaggedField {
 	tf := TaggedField{}
 	tf.Value = val
 
@@ -774,15 +791,7 @@ func handleTaggedFields(parts []string, val interface{}, taggedFields map[string
 		}
 	}
 
-	tfh := tf.hash()
-	if _, ok := taggedFields[tfh]; !ok {
-		taggedFields[tfh] = []TaggedField{}
-	}
-	taggedFields[tfh] = append(taggedFields[tfh], tf)
-
-	if _, ok := extraTags[tfh]; !ok {
-		extraTags[tfh] = tf.tags()
-	}
+	return tf
 }
 
 func init() {
