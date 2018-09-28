@@ -674,51 +674,57 @@ func (m *Mesos) gatherMainMetrics(u *url.URL, role Role, acc telegraf.Accumulato
 		}
 	}
 
-	var includeTaggedFields bool
+	var includeFrameworkOffers, includeAllocator bool
 	for _, col := range m.MasterCols {
-		if col == "framework_offers" || col == "allocator" {
-			includeTaggedFields = true
-			break
+		if col == "framework_offers" {
+			includeFrameworkOffers = true
+		} else if col == "allocator" {
+			includeAllocator = true
 		}
 	}
 
 	taggedFields := map[string][]TaggedField{}
 	extraTags := map[string]fieldTags{}
 
-	if includeTaggedFields {
-		for metricName, val := range jf.Fields {
-			if !strings.HasPrefix(metricName, "master/frameworks/") && !strings.HasPrefix(metricName, "allocator/") {
-				continue
-			}
-
-			parts := strings.Split(metricName, "/")
-			if (parts[0] == "master" && len(parts) < 5) || (parts[0] == "allocator" && len(parts) <= 5) {
-				// All framework offers metrics have at least 5 parts.
-				// All allocator metrics with <= 5 parts can be sent as is and does not pull
-				// any params out into tags.
-				// (e.g. allocator/mesos/allocation_run_ms/count vs allocator/mesos/roles/<role>/shares/dominant)
-				continue
-			}
-
-			tf := generateTaggedField(parts, val)
-
-			if len(tf.tags()) == 0 {
-				// indicates no extra tags were added
-				continue
-			}
-
-			tfh := tf.hash()
-			if _, ok := taggedFields[tfh]; !ok {
-				taggedFields[tfh] = []TaggedField{}
-			}
-			taggedFields[tfh] = append(taggedFields[tfh], tf)
-
-			if _, ok := extraTags[tfh]; !ok {
-				extraTags[tfh] = tf.tags()
-			}
-
-			delete(jf.Fields, metricName)
+	for metricName, val := range jf.Fields {
+		if !strings.HasPrefix(metricName, "master/frameworks/") && !strings.HasPrefix(metricName, "allocator/") {
+			continue
 		}
+
+		// filter out framework offers/allocator metrics if necessary
+		if (!includeFrameworkOffers && strings.HasPrefix(metricName, "master/frameworks/")) ||
+			(!includeAllocator && strings.HasPrefix(metricName, "allocator/")) {
+			delete(jf.Fields, metricName)
+			continue
+		}
+
+		parts := strings.Split(metricName, "/")
+		if (parts[0] == "master" && len(parts) < 5) || (parts[0] == "allocator" && len(parts) <= 5) {
+			// All framework offers metrics have at least 5 parts.
+			// All allocator metrics with <= 5 parts can be sent as is and does not pull
+			// any params out into tags.
+			// (e.g. allocator/mesos/allocation_run_ms/count vs allocator/mesos/roles/<role>/shares/dominant)
+			continue
+		}
+
+		tf := generateTaggedField(parts, val)
+
+		if len(tf.tags()) == 0 {
+			// indicates no extra tags were added
+			continue
+		}
+
+		tfh := tf.hash()
+		if _, ok := taggedFields[tfh]; !ok {
+			taggedFields[tfh] = []TaggedField{}
+		}
+		taggedFields[tfh] = append(taggedFields[tfh], tf)
+
+		if _, ok := extraTags[tfh]; !ok {
+			extraTags[tfh] = tf.tags()
+		}
+
+		delete(jf.Fields, metricName)
 	}
 
 	acc.AddFields("mesos", jf.Fields, tags)
