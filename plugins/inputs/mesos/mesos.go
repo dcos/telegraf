@@ -787,16 +787,16 @@ func generateTaggedField(parts []string) TaggedField {
 	} else if parts[0] == "allocator" {
 		switch parts[2] {
 		case "roles":
-			// e.g. /allocator/mesos/roles/shares/dominant
-			tf.FieldName = fmt.Sprintf("%s/%s/%s/%s/%s", parts[0], parts[1], parts[2], parts[4], parts[5])
+			// e.g. /allocator/roles/shares/dominant
+			tf.FieldName = fmt.Sprintf("%s/%s/%s/%s", parts[0], parts[2], parts[4], parts[5])
 			tf.RoleName = parts[3]
 		case "offer_filters":
-			// e.g. /allocator/mesos/offer_filters/roles/active
-			tf.FieldName = fmt.Sprintf("%s/%s/%s/%s/%s", parts[0], parts[1], parts[2], parts[3], parts[5])
+			// e.g. /allocator/offer_filters/roles/active
+			tf.FieldName = fmt.Sprintf("%s/%s/%s/%s", parts[0], parts[2], parts[3], parts[5])
 			tf.RoleName = parts[4]
 		case "quota":
-			// e.g. /allocator/mesos/quota/roles/resources/offered_or_allocated
-			tf.FieldName = fmt.Sprintf("%s/%s/%s/%s/%s/%s", parts[0], parts[1], parts[2], parts[3], parts[5], parts[7])
+			// e.g. /allocator/quota/roles/resources/offered_or_allocated
+			tf.FieldName = fmt.Sprintf("%s/%s/%s/%s/%s", parts[0], parts[2], parts[3], parts[5], parts[7])
 			tf.RoleName = parts[4]
 			tf.Resource = parts[6]
 		default:

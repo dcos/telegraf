@@ -384,15 +384,15 @@ func TestMesosMaster(t *testing.T) {
 		},
 		// allocator
 		{
-			"allocator/mesos/roles/shares/dominant":      masterMetrics["allocator/mesos/roles/*/shares/dominant"],
-			"allocator/mesos/offer_filters/roles/active": masterMetrics["allocator/mesos/offer_filters/roles/*/active"],
+			"allocator/roles/shares/dominant":      masterMetrics["allocator/mesos/roles/*/shares/dominant"],
+			"allocator/offer_filters/roles/active": masterMetrics["allocator/mesos/offer_filters/roles/*/active"],
 		},
 		{
-			"allocator/mesos/quota/roles/resources/offered_or_allocated": masterMetrics["allocator/mesos/quota/roles/*/resources/disk/offered_or_allocated"],
-			"allocator/mesos/quota/roles/resources/guarantee":            masterMetrics["allocator/mesos/quota/roles/*/resources/disk/guarantee"],
+			"allocator/quota/roles/resources/offered_or_allocated": masterMetrics["allocator/mesos/quota/roles/*/resources/disk/offered_or_allocated"],
+			"allocator/quota/roles/resources/guarantee":            masterMetrics["allocator/mesos/quota/roles/*/resources/disk/guarantee"],
 		},
 		{
-			"allocator/mesos/quota/roles/resources/guarantee": masterMetrics["allocator/mesos/quota/roles/*/resources/mem/guarantee"],
+			"allocator/quota/roles/resources/guarantee": masterMetrics["allocator/mesos/quota/roles/*/resources/mem/guarantee"],
 		},
 	}
 

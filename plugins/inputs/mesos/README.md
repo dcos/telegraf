@@ -19,10 +19,12 @@ For more information, please check the [Mesos Observability Metrics](http://meso
     "system",
     "agents",
     "frameworks",
+    "framework_offers",
     "tasks",
     "messages",
     "evqueue",
     "registrar",
+    "allocator",
   ]
   ## A list of Mesos slaves, default is []
   # slaves = []
