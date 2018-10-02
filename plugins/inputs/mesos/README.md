@@ -192,38 +192,38 @@ Mesos master metric groups
     - registrar/state_store_ms/p9999
 
 - allocator
-    - allocator/mesos/allocation_run_ms
-    - allocator/mesos/allocation_run_ms/count
-    - allocator/mesos/allocation_run_ms/max
-    - allocator/mesos/allocation_run_ms/min
-    - allocator/mesos/allocation_run_ms/p50
-    - allocator/mesos/allocation_run_ms/p90
-    - allocator/mesos/allocation_run_ms/p95
-    - allocator/mesos/allocation_run_ms/p99
-    - allocator/mesos/allocation_run_ms/p999
-    - allocator/mesos/allocation_run_ms/p9999
-    - allocator/mesos/allocation_runs
-    - allocator/mesos/allocation_run_latency_ms
-    - allocator/mesos/allocation_run_latency_ms/count
-    - allocator/mesos/allocation_run_latency_ms/max
-    - allocator/mesos/allocation_run_latency_ms/min
-    - allocator/mesos/allocation_run_latency_ms/p50
-    - allocator/mesos/allocation_run_latency_ms/p90
-    - allocator/mesos/allocation_run_latency_ms/p95
-    - allocator/mesos/allocation_run_latency_ms/p99
-    - allocator/mesos/allocation_run_latency_ms/p999
-    - allocator/mesos/allocation_run_latency_ms/p9999
-    - allocator/mesos/roles/shares/dominant
-    - allocator/mesos/event_queue_dispatches
-    - allocator/mesos/offer_filters/roles/active
-    - allocator/mesos/quota/roles/resources/offered_or_allocated
-    - allocator/mesos/quota/roles/resources/guarantee
-    - allocator/mesos/resources/cpus/offered_or_allocated
-    - allocator/mesos/resources/cpus/total
-    - allocator/mesos/resources/disk/offered_or_allocated
-    - allocator/mesos/resources/disk/total
-    - allocator/mesos/resources/mem/offered_or_allocated
-    - allocator/mesos/resources/mem/total
+    - allocator/allocation_run_ms
+    - allocator/allocation_run_ms/count
+    - allocator/allocation_run_ms/max
+    - allocator/allocation_run_ms/min
+    - allocator/allocation_run_ms/p50
+    - allocator/allocation_run_ms/p90
+    - allocator/allocation_run_ms/p95
+    - allocator/allocation_run_ms/p99
+    - allocator/allocation_run_ms/p999
+    - allocator/allocation_run_ms/p9999
+    - allocator/allocation_runs
+    - allocator/allocation_run_latency_ms
+    - allocator/allocation_run_latency_ms/count
+    - allocator/allocation_run_latency_ms/max
+    - allocator/allocation_run_latency_ms/min
+    - allocator/allocation_run_latency_ms/p50
+    - allocator/allocation_run_latency_ms/p90
+    - allocator/allocation_run_latency_ms/p95
+    - allocator/allocation_run_latency_ms/p99
+    - allocator/allocation_run_latency_ms/p999
+    - allocator/allocation_run_latency_ms/p9999
+    - allocator/roles/shares/dominant
+    - allocator/event_queue_dispatches
+    - allocator/offer_filters/roles/active
+    - allocator/quota/roles/resources/offered_or_allocated
+    - allocator/quota/roles/resources/guarantee
+    - allocator/resources/cpus/offered_or_allocated
+    - allocator/resources/cpus/total
+    - allocator/resources/disk/offered_or_allocated
+    - allocator/resources/disk/total
+    - allocator/resources/mem/offered_or_allocated
+    - allocator/resources/mem/total
 
 Mesos slave metric groups
 - resources
