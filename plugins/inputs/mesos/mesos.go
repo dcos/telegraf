@@ -35,6 +35,7 @@ type Mesos struct {
 	SlaveCols  []string `toml:"slave_collections"`
 	//SlaveTasks bool
 	tls.ClientConfig
+	DCOSConfig
 
 	initialized bool
 	client      *http.Client
@@ -156,6 +157,10 @@ var sampleConfig = `
   # tls_key = "/etc/telegraf/key.pem"
   ## Use TLS but skip chain & host verification
   # insecure_skip_verify = false
+
+  ## Optional IAM configuration (DCOS)
+  # ca_certificate_path = "/run/dcos/pki/CA/ca-bundle.crt"
+  # iam_config_path = "/run/dcos/etc/telegraf/master_service_account.json"
 `
 
 // SampleConfig returns a sample configuration block
@@ -282,10 +287,16 @@ func (m *Mesos) Gather(acc telegraf.Accumulator) error {
 	return nil
 }
 
+// createHttpClient returns an http client configured with the available levels of
+// TLS and IAM according to flags set in the config
 func (m *Mesos) createHttpClient() (*http.Client, error) {
 	tlsCfg, err := m.ClientConfig.TLSConfig()
 	if err != nil {
 		return nil, err
+	}
+
+	if tlsCfg != nil && m.CACertificatePath != "" {
+		return nil, errors.New("received both TLS and IAM configs but only expected one")
 	}
 
 	client := &http.Client{
@@ -294,6 +305,14 @@ func (m *Mesos) createHttpClient() (*http.Client, error) {
 			TLSClientConfig: tlsCfg,
 		},
 		Timeout: 4 * time.Second,
+	}
+
+	if m.CACertificatePath != "" {
+		transport, err := m.DCOSConfig.transport()
+		if err != nil {
+			return nil, err
+		}
+		client.Transport = transport
 	}
 
 	return client, nil

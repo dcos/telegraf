@@ -44,6 +44,10 @@ For more information, please check the [Mesos Observability Metrics](http://meso
   # tls_key = "/etc/telegraf/key.pem"
   ## Use TLS but skip chain & host verification
   # insecure_skip_verify = false
+
+  ## Optional IAM configuration (DCOS)
+  # ca_certificate_path = "/run/dcos/pki/CA/ca-bundle.crt"
+  # iam_config_path = "/run/dcos/etc/telegraf/master_service_account.json"
 ```
 
 By default this plugin is not configured to gather metrics from mesos. Since a mesos cluster can be deployed in numerous ways it does not provide any default
