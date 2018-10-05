@@ -310,7 +310,7 @@ func (m *Mesos) createHttpClient() (*http.Client, error) {
 	if m.CACertificatePath != "" {
 		transport, err := m.DCOSConfig.transport()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error creating transport: %s", err)
 		}
 		client.Transport = transport
 	}

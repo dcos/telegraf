@@ -3,6 +3,7 @@ package mesos
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
@@ -11,6 +12,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/influxdata/telegraf/internal/tls"
 	"github.com/influxdata/telegraf/testutil"
 	"github.com/stretchr/testify/require"
 )
@@ -586,4 +588,117 @@ func TestURLTagDoesNotModify(t *testing.T) {
 	v := urlTag(u)
 	require.Equal(t, u.String(), "http://a:b@localhost:5051?timeout=1ms")
 	require.Equal(t, v, "http://localhost:5051")
+}
+
+var pki = testutil.NewPKI("../../../testutil/pki")
+
+func TestCreateHTTPClientTLS(t *testing.T) {
+	require := require.New(t)
+
+	m := Mesos{
+		ClientConfig: tls.ClientConfig{
+			TLSCA:   pki.CACertPath(),
+			TLSCert: pki.ClientCertPath(),
+			TLSKey:  pki.ClientKeyPath(),
+		},
+	}
+
+	client, err := m.createHttpClient()
+	require.NoError(err)
+	require.NotNil(client)
+	require.NotNil(client.Transport)
+}
+
+func TestCreateHTTPClientInvalid(t *testing.T) {
+	require := require.New(t)
+
+	m := Mesos{
+		ClientConfig: tls.ClientConfig{
+			TLSCA:   pki.CACertPath(),
+			TLSCert: pki.ClientCertPath(),
+			TLSKey:  pki.ClientKeyPath(),
+		},
+		DCOSConfig: DCOSConfig{
+			CACertificatePath: pki.CACertPath(),
+		},
+	}
+
+	client, err := m.createHttpClient()
+	require.Error(err)
+	require.Equal("received both TLS and IAM configs but only expected one", err.Error())
+	require.Nil(client)
+}
+
+func TestCreateHTTPClientTLSCACert(t *testing.T) {
+	require := require.New(t)
+
+	m := Mesos{
+		DCOSConfig: DCOSConfig{
+			CACertificatePath: pki.CACertPath(),
+		},
+	}
+
+	client, err := m.createHttpClient()
+	require.NoError(err)
+	require.NotNil(client)
+	require.NotNil(client.Transport)
+}
+
+var testToken = "123456"
+
+// startTestServer starts a server and serves the testToken at the loginEndpoint
+// /acs/api/v1/auth/login
+func startTestServer(t *testing.T) *httptest.Server {
+	router := http.NewServeMux()
+	router.HandleFunc("/acs/api/v1/auth/login", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		w.Write([]byte(`{"token":"` + testToken + `"}`))
+	})
+	return httptest.NewServer(router)
+}
+
+func TestCreateHTTPClientIAM(t *testing.T) {
+	require := require.New(t)
+
+	server := startTestServer(t)
+	defer server.Close()
+
+	// create tmp json file using mocked server.URL for loginEndpoint
+	tmpFile := "/tmp/service_account.json"
+	modifiedServiceAcctString := strings.Replace(pki.ReadIAMAccount(), "http://127.0.0.1:8101", server.URL, 1)
+	require.Nil(ioutil.WriteFile(tmpFile, []byte(modifiedServiceAcctString), 0644))
+	defer os.Remove(tmpFile)
+
+	m := Mesos{
+		DCOSConfig: DCOSConfig{
+			CACertificatePath: pki.CACertPath(),
+			IAMConfigPath:     tmpFile,
+		},
+	}
+
+	client, err := m.createHttpClient()
+	require.NoError(err)
+	require.NotNil(client)
+	require.NotNil(client.Transport)
+
+	// test that all requests on client send an Authorization header with token
+	tokenTestServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		auth := r.Header.Get("Authorization")
+		if auth != "token="+testToken {
+			t.Fatalf("Expected request header: `Authorization: token=%s`. Got: %s", testToken, auth)
+		}
+	}))
+	defer tokenTestServer.Close()
+
+	c := http.Client{
+		Transport: client.Transport,
+	}
+
+	resp, err := c.Get(tokenTestServer.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
 }

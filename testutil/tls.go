@@ -73,6 +73,14 @@ func (p *pki) ServerKeyPath() string {
 	return path.Join(p.path, "serverkey.pem")
 }
 
+func (p *pki) ReadIAMAccount() string {
+	return readCertificate(p.IAMAccountPath())
+}
+
+func (p *pki) IAMAccountPath() string {
+	return path.Join(p.path, "serviceaccount.json")
+}
+
 func readCertificate(filename string) string {
 	file, err := os.Open(filename)
 	if err != nil {
