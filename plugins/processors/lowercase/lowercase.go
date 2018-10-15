@@ -39,6 +39,9 @@ func (l *Lowercase) Apply(in ...telegraf.Metric) []telegraf.Metric {
 				metric.AddField(strings.ToLower(key), value)
 			}
 		}
+		if strings.ContainsAny(metric.Name(), capitals) {
+			metric.SetName(strings.ToLower(metric.Name()))
+		}
 		out = append(out, metric)
 	}
 	return out

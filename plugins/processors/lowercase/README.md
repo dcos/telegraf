@@ -1,6 +1,6 @@
 # Lowercase Processor Plugin
 
-The lowercase processor plugin ensures that metrics fields are lowercased. 
+The lowercase processor plugin ensures that metric names and fields are lowercase. 
 
 By default, metrics are coerced to lowercase. Optionally, metrics may be copied, so that the original metric is
 preserved and a lowercase copy is also emitted. 

@@ -13,7 +13,7 @@ import (
 // By default, we don't send original metrics, only lowercased metrics
 func TestApply_Defaults(t *testing.T) {
 	input, err := metric.New(
-		"test",
+		"tEsT",
 		map[string]string{},
 		map[string]interface{}{
 			"lower_case": "abc123",
@@ -27,6 +27,7 @@ func TestApply_Defaults(t *testing.T) {
 	lc := Lowercase{}
 	output := lc.Apply(input)
 	assert.Equal(t, 1, len(output))
+	assert.Equal(t, "test", output[0].Name())
 	assert.Equal(t, map[string]interface{}{
 		"lower_case": "abc123",
 		"upper_case": "ABC123",
@@ -37,7 +38,7 @@ func TestApply_Defaults(t *testing.T) {
 // With SendOriginals enabled, we send original metrics, and also lowercased metrics
 func TestApply_SendOriginals(t *testing.T) {
 	input, err := metric.New(
-		"test",
+		"tEsT",
 		map[string]string{},
 		map[string]interface{}{
 			"lower_case": "abc123",
@@ -51,6 +52,8 @@ func TestApply_SendOriginals(t *testing.T) {
 	lc := Lowercase{SendOriginal: true}
 	output := lc.Apply(input)
 	assert.Equal(t, 2, len(output))
+	assert.Equal(t, "tEsT", output[0].Name())
+	assert.Equal(t, "test", output[1].Name())
 	assert.Equal(t, map[string]interface{}{
 		"lower_case": "abc123",
 		"UPPER_CASE": "ABC123",
