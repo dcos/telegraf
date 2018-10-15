@@ -23,6 +23,9 @@ import (
 	"github.com/mesos/mesos-go/api/v1/lib/httpcli/httpagent"
 )
 
+const dcos_metrics_prefix := "DCOS_METRICS_"
+const dcos_metrics_labels_whitelist := []string{"DCOS_SERVICE_NAME"}
+
 type DCOSMetadata struct {
 	MesosAgentUrl     string
 	Timeout           internal.Duration
@@ -288,12 +291,26 @@ func mapExecutorNames(ge *agent.Response_GetExecutors) map[string]string {
 func mapTaskLabels(labels *mesos.Labels) map[string]string {
 	results := map[string]string{}
 	if labels != nil {
+		var selected bool
 		for _, l := range labels.GetLabels() {
+			selected = false
+
 			k := l.GetKey()
-			if len(k) > 13 {
-				if k[:13] == "DCOS_METRICS_" {
-					results[k[13:]] = l.GetValue()
+
+			if strings.HasPrefix(k, dcos_metrics_prefix) {
+				k = strings.TrimPrefix(k, dcos_metrics_prefix)
+				if len(k) > 0 {
+					selected = true
 				}
+				for _, whitelistLabel := range dcos_metrics_labels_whitelist {
+					if k == whitelistLabel {
+						selected = true
+						break
+					}
+				}
+			}
+			if selected {
+				results[k] = l.GetValue()
 			}
 		}
 	}
