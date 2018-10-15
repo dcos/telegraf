@@ -25,7 +25,7 @@ import (
 )
 
 const dcosMetricsPrefix = "DCOS_METRICS_"
-const dcosMetricsLabelsWhitelist = []string{"DCOS_SERVICE_NAME"}
+dcosMetricsLabelsWhitelist := [...]string{"DCOS_SERVICE_NAME"}
 
 type DCOSMetadata struct {
 	MesosAgentUrl     string
