@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -23,8 +24,8 @@ import (
 	"github.com/mesos/mesos-go/api/v1/lib/httpcli/httpagent"
 )
 
-const dcos_metrics_prefix := "DCOS_METRICS_"
-const dcos_metrics_labels_whitelist := []string{"DCOS_SERVICE_NAME"}
+const dcosMetricsPrefix = "DCOS_METRICS_"
+const dcosMetricsLabelsWhitelist = []string{"DCOS_SERVICE_NAME"}
 
 type DCOSMetadata struct {
 	MesosAgentUrl     string
@@ -297,12 +298,12 @@ func mapTaskLabels(labels *mesos.Labels) map[string]string {
 
 			k := l.GetKey()
 
-			if strings.HasPrefix(k, dcos_metrics_prefix) {
-				k = strings.TrimPrefix(k, dcos_metrics_prefix)
+			if strings.HasPrefix(k, dcosMetricsPrefix) {
+				k = strings.TrimPrefix(k, dcosMetricsPrefix)
 				if len(k) > 0 {
 					selected = true
 				}
-				for _, whitelistLabel := range dcos_metrics_labels_whitelist {
+				for _, whitelistLabel := range dcosMetricsLabelsWhitelist {
 					if k == whitelistLabel {
 						selected = true
 						break
