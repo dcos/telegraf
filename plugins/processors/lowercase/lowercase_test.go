@@ -95,3 +95,27 @@ func BenchmarkStringsMatch(b *testing.B) {
 		strings.ContainsAny(input, uppers)
 	}
 }
+
+// The following two tests demonstrate that casting a string to lowercase
+// naively is ~2 times faster than casting it only if uppercase.
+
+func BenchmarkConditionalLowercase(b *testing.B) {
+	inputs := []string{"Hello, World", "hello, world"}
+	uppers := "ABCDEFGHIJKLNMNOPQRSTUVWXYZ"
+	for i := 0; i < b.N; i++ {
+		for _, input := range inputs {
+			if strings.ContainsAny(input, uppers) {
+				strings.ToLower(input)
+			}
+		}
+	}
+}
+
+func BenchmarkNaiveLowercase(b *testing.B) {
+	inputs := []string{"Hello, World", "hello, world"}
+	for i := 0; i < b.N; i++ {
+		for _, input := range inputs {
+			strings.ToLower(input)
+		}
+	}
+}
