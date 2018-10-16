@@ -30,21 +30,39 @@ func (l *Lowercase) Description() string {
 func (l *Lowercase) Apply(in ...telegraf.Metric) []telegraf.Metric {
 	out := []telegraf.Metric{}
 	for _, metric := range in {
-		if l.SendOriginal {
+		// Optimisation: only test for uppercase metrics if we wish to
+		// preserve the original metric.
+		if l.SendOriginal && isUpper(metric) {
 			out = append(out, metric.Copy())
 		}
-		for key, value := range metric.Fields() {
-			if strings.ContainsAny(key, capitals) {
-				metric.RemoveField(key)
-				metric.AddField(strings.ToLower(key), value)
-			}
-		}
-		if strings.ContainsAny(metric.Name(), capitals) {
-			metric.SetName(strings.ToLower(metric.Name()))
-		}
-		out = append(out, metric)
+
+		out = append(out, toLower(metric))
 	}
+
 	return out
+}
+
+func isUpper(metric telegraf.Metric) bool {
+	if strings.ContainsAny(metric.Name(), capitals) {
+		return true
+	}
+	for key, _ := range metric.Fields() {
+		if strings.ContainsAny(key, capitals) {
+			return true
+		}
+	}
+	return false
+}
+
+func toLower(metric telegraf.Metric) telegraf.Metric {
+	metric.SetName(strings.ToLower(metric.Name()))
+	for key, value := range metric.Fields() {
+		// The metric interface does not expose fields; we
+		// therefore remove and re-add the affected key.
+		metric.RemoveField(key)
+		metric.AddField(strings.ToLower(key), value)
+	}
+	return metric
 }
 
 func init() {
