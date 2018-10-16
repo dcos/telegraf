@@ -28,7 +28,8 @@ func (l *Lowercase) Description() string {
 }
 
 func (l *Lowercase) Apply(in ...telegraf.Metric) []telegraf.Metric {
-	out := []telegraf.Metric{}
+	out := make([]telegraf.Metric, 0, len(in))
+
 	for _, metric := range in {
 		// Optimisation: only test for uppercase metrics if we wish to
 		// preserve the original metric.
