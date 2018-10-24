@@ -110,7 +110,7 @@ var (
 			// We do not expect the cache to be updated
 			containers: map[string]containerInfo{},
 		},
-		// Fetching a nested container ID
+		// Fetching a nested container ID; not cached
 		testCase{
 			fixture: "nested",
 			inputs: []telegraf.Metric{
@@ -128,10 +128,64 @@ var (
 				),
 			},
 			cachedContainers: map[string]containerInfo{},
+			// We do expect the cache to be updated when apply is done
+			// Parent container (executor) is fetched along with task
+			containers: map[string]containerInfo{
+				"abc123": containerInfo{"abc123", "task", "executor", "framework",
+					map[string]string{}},
+				"xyz123": containerInfo{"xyz123", "", "executor", "framework",
+					nil},
+			},
+		},
+		// Fetching a nested container ID; cached
+		testCase{
+			fixture: "nested",
+			inputs: []telegraf.Metric{
+				newMetric("test",
+					map[string]string{"container_id": "abc123"},
+					map[string]interface{}{"value": int64(1)},
+					time.Now(),
+				),
+				newMetric("test",
+					map[string]string{"container_id": "xyz123"},
+					map[string]interface{}{"value": int64(1)},
+					time.Now(),
+				),
+			},
+			expected: []telegraf.Metric{
+				newMetric("test",
+					map[string]string{
+						"container_id":  "abc123",
+						"service_name":  "framework",
+						"executor_name": "executor",
+						"task_name":     "task",
+					},
+					map[string]interface{}{"value": int64(1)},
+					time.Now(),
+				),
+				newMetric("test",
+					map[string]string{
+						"container_id":  "xyz123",
+						"service_name":  "framework",
+						"executor_name": "executor",
+						"task_name":     "",
+					},
+					map[string]interface{}{"value": int64(1)},
+					time.Now(),
+				),
+			},
+			cachedContainers: map[string]containerInfo{
+				"abc123": containerInfo{"abc123", "task", "executor", "framework",
+					map[string]string{}},
+				"xyz123": containerInfo{"xyz123", "", "executor", "framework",
+					nil},
+			},
 			// We do not expect the cache to be updated
 			containers: map[string]containerInfo{
 				"abc123": containerInfo{"abc123", "task", "executor", "framework",
 					map[string]string{}},
+				"xyz123": containerInfo{"xyz123", "", "executor", "framework",
+					nil},
 			},
 		},
 		// No executor;
@@ -235,7 +289,7 @@ func waitForContainersToEqual(t *testing.T, dm *DCOSMetadata, expected map[strin
 
 	select {
 	case <-done:
-		assert.Equal(t, dm.containers, expected)
+		assert.Equal(t, expected, dm.containers)
 		return
 	case <-time.After(timeout):
 		assert.Fail(t, "Timed out waiting for a container update")

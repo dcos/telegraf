@@ -97,7 +97,7 @@ func (dm *DCOSMetadata) Apply(in ...telegraf.Metric) []telegraf.Metric {
 
 	if stale {
 		cids := []string{}
-		for cid, _ := range unknown {
+		for cid := range unknown {
 			cids = append(cids, cid)
 		}
 		go dm.refresh(cids...)
@@ -181,7 +181,7 @@ func (dm *DCOSMetadata) cache(gs *agent.Response_GetState) error {
 	executorNames := mapExecutorNames(gs.GetGetExecutors())
 
 	for _, t := range gt.GetLaunchedTasks() {
-		cid := getContainerID(t.GetStatuses())
+		pcid, cid := getContainerIDs(t.GetStatuses())
 		eName := ""
 		// ExecutorID is _not_ guaranteed not to be nil (FrameworkID is)
 		if eid := t.GetExecutorID(); eid != nil {
@@ -196,6 +196,13 @@ func (dm *DCOSMetadata) cache(gs *agent.Response_GetState) error {
 				executorName:  eName,
 				frameworkName: frameworkNames[t.GetFrameworkID().Value],
 				taskLabels:    mapTaskLabels(t.GetLabels()),
+			}
+		}
+		if pcid != "" {
+			containers[pcid] = containerInfo{
+				containerID:   pcid,
+				executorName:  eName,
+				frameworkName: frameworkNames[t.GetFrameworkID().Value],
 			}
 		}
 	}
@@ -240,22 +247,26 @@ func (dm *DCOSMetadata) getClient() (*httpcli.Client, error) {
 	return client, nil
 }
 
-// getContainerID retrieves the container ID linked to this task. Task can have
-// multiple statuses. Each status can have multiple container IDs. In DC/OS,
-// there is a one-to-one mapping between tasks and containers; however it is
+// getContainerIDs retrieves the parent container ID (if existent) and the
+// container ID linked to this task. Task can have multiple statuses.
+// Each status can have multiple container IDs. In DC/OS, there is a
+// one-to-one mapping between tasks and containers; however it is
 // possible to have nested containers. Therefore we use the first status, and
-// return its parent container ID if possible, and if not, then its ID.
-func getContainerID(statuses []mesos.TaskStatus) string {
+// return its parent container ID if possible, along with its ID.
+func getContainerIDs(statuses []mesos.TaskStatus) (string, string) {
 	// Container ID is held in task status
 	for _, s := range statuses {
 		if cs := s.GetContainerStatus(); cs != nil {
 			// TODO (philipnrmn) account for deeply-nested containers
 			if cid := cs.GetContainerID(); cid != nil {
-				return cid.GetValue()
+				if pcid := cid.GetParent(); pcid != nil {
+					return pcid.GetValue(), cid.GetValue()
+				}
+				return "", cid.GetValue()
 			}
 		}
 	}
-	return ""
+	return "", ""
 }
 
 // mapFrameworkNames returns a map of framework ids and names
