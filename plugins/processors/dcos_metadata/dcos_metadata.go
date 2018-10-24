@@ -181,7 +181,7 @@ func (dm *DCOSMetadata) cache(gs *agent.Response_GetState) error {
 	executorNames := mapExecutorNames(gs.GetGetExecutors())
 
 	for _, t := range gt.GetLaunchedTasks() {
-		pcid, cid := getContainerIDs(t.GetStatuses())
+		cid, pcid := getContainerIDs(t.GetStatuses())
 		eName := ""
 		// ExecutorID is _not_ guaranteed not to be nil (FrameworkID is)
 		if eid := t.GetExecutorID(); eid != nil {
@@ -252,10 +252,10 @@ func (dm *DCOSMetadata) getClient() (*httpcli.Client, error) {
 // Each status can have multiple container IDs. In DC/OS, there is a
 // one-to-one mapping between tasks and containers; however it is
 // possible to have nested containers. Therefore we use the first status, and
-// getContainerIDs retrieves the container ID and the parent container ID of a                                          
-// task from its TaskStatus. The container ID corresponds to the task's                                                 
-// container, the parent container ID corresponds to the task's executor's                                              
-// container. 
+// getContainerIDs retrieves the container ID and the parent container ID of a
+// task from its TaskStatus. The container ID corresponds to the task's
+// container, the parent container ID corresponds to the task's executor's
+// container.
 func getContainerIDs(statuses []mesos.TaskStatus) (string, string) {
 	// Container ID is held in task status
 	for _, s := range statuses {
@@ -263,9 +263,9 @@ func getContainerIDs(statuses []mesos.TaskStatus) (string, string) {
 			// TODO (philipnrmn) account for deeply-nested containers
 			if cid := cs.GetContainerID(); cid != nil {
 				if pcid := cid.GetParent(); pcid != nil {
-					return pcid.GetValue(), cid.GetValue()
+					return cid.GetValue(), pcid.GetValue()
 				}
-				return "", cid.GetValue()
+				return cid.GetValue(), ""
 			}
 		}
 	}
