@@ -252,7 +252,10 @@ func (dm *DCOSMetadata) getClient() (*httpcli.Client, error) {
 // Each status can have multiple container IDs. In DC/OS, there is a
 // one-to-one mapping between tasks and containers; however it is
 // possible to have nested containers. Therefore we use the first status, and
-// return its parent container ID if possible, along with its ID.
+// getContainerIDs retrieves the container ID and the parent container ID of a                                          
+// task from its TaskStatus. The container ID corresponds to the task's                                                 
+// container, the parent container ID corresponds to the task's executor's                                              
+// container. 
 func getContainerIDs(statuses []mesos.TaskStatus) (string, string) {
 	// Container ID is held in task status
 	for _, s := range statuses {
