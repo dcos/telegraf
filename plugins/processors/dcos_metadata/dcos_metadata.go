@@ -247,11 +247,6 @@ func (dm *DCOSMetadata) getClient() (*httpcli.Client, error) {
 	return client, nil
 }
 
-// getContainerIDs retrieves the parent container ID (if existent) and the
-// container ID linked to this task. Task can have multiple statuses.
-// Each status can have multiple container IDs. In DC/OS, there is a
-// one-to-one mapping between tasks and containers; however it is
-// possible to have nested containers. Therefore we use the first status, and
 // getContainerIDs retrieves the container ID and the parent container ID of a
 // task from its TaskStatus. The container ID corresponds to the task's
 // container, the parent container ID corresponds to the task's executor's
