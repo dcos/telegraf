@@ -73,7 +73,7 @@ func (dm *DCOSMetadata) Apply(in ...telegraf.Metric) []telegraf.Metric {
 	stale := false
 
 	// track unrecognised container ids
-	unknown := map[string]bool{}
+	nonCachedIDs := map[string]bool{}
 
 	for _, metric := range in {
 		// Ignore metrics without container_id tag
@@ -89,7 +89,7 @@ func (dm *DCOSMetadata) Apply(in ...telegraf.Metric) []telegraf.Metric {
 				}
 				metric.AddTag("task_name", c.taskName)
 			} else {
-				unknown[cid] = true
+				nonCachedIDs[cid] = true
 				stale = true
 			}
 		}
@@ -97,7 +97,7 @@ func (dm *DCOSMetadata) Apply(in ...telegraf.Metric) []telegraf.Metric {
 
 	if stale {
 		cids := []string{}
-		for cid := range unknown {
+		for cid := range nonCachedIDs {
 			cids = append(cids, cid)
 		}
 		go dm.refresh(cids...)
@@ -250,21 +250,24 @@ func (dm *DCOSMetadata) getClient() (*httpcli.Client, error) {
 // getContainerIDs retrieves the container ID and the parent container ID of a
 // task from its TaskStatus. The container ID corresponds to the task's
 // container, the parent container ID corresponds to the task's executor's
-// container.
-func getContainerIDs(statuses []mesos.TaskStatus) (string, string) {
+// container. If there is no parent container ID, the task is the
+// executor (uses default executor).
+func getContainerIDs(statuses []mesos.TaskStatus) (containerID string, parentContainerID string) {
 	// Container ID is held in task status
 	for _, s := range statuses {
 		if cs := s.GetContainerStatus(); cs != nil {
 			// TODO (philipnrmn) account for deeply-nested containers
 			if cid := cs.GetContainerID(); cid != nil {
+				containerID = cid.GetValue()
 				if pcid := cid.GetParent(); pcid != nil {
-					return cid.GetValue(), pcid.GetValue()
+					parentContainerID = pcid.GetValue()
+					return
 				}
-				return cid.GetValue(), ""
+				return
 			}
 		}
 	}
-	return "", ""
+	return
 }
 
 // mapFrameworkNames returns a map of framework ids and names
