@@ -303,32 +303,17 @@ func (ds *DCOSStatsd) loadContainers() error {
 // getStatsdServerPort waits for the statsd server to start up, then returns
 // the port on which it is running, or times out.
 func getStatsdServerPort(s *statsd.Statsd) (int, error) {
-	done := make(chan bool)
-	go func() {
-		for {
-			if s.UDPlistener != nil {
-				done <- true
-				break
-			}
-			time.Sleep(10 * time.Millisecond)
-		}
-	}()
-
 	select {
 	case <-time.After(time.Second):
 		return 0, errors.New("timed out waiting for statsd server to start")
-	case <-done:
-		break
+	case addr := <-s.ListenAddr:
+		su, err := url.Parse("http://" + addr.String())
+		if err != nil {
+			return 0, err
+		}
+
+		return strconv.Atoi(su.Port())
 	}
-
-	addr := s.UDPlistener.LocalAddr().String()
-	su, err := url.Parse("http://" + addr)
-
-	if err != nil {
-		return 0, err
-	}
-
-	return strconv.Atoi(su.Port())
 }
 
 // checkPort checks that a port is free.

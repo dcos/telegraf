@@ -83,6 +83,9 @@ type Statsd struct {
 
 	ReadBufferSize int `toml:"read_buffer_size"`
 
+	// Channel for reporting the listen address for the statsd server after it starts.
+	ListenAddr chan net.Addr
+
 	sync.Mutex
 	// Lock for preventing a data race during resource cleanup
 	cleanup sync.Mutex
@@ -322,6 +325,7 @@ func (s *Statsd) Start(ac telegraf.Accumulator) error {
 	s.counters = make(map[string]cachedcounter)
 	s.sets = make(map[string]cachedset)
 	s.timings = make(map[string]cachedtimings)
+	s.ListenAddr = make(chan net.Addr, 1)
 
 	s.Lock()
 	defer s.Unlock()
@@ -369,7 +373,9 @@ func (s *Statsd) Start(ac telegraf.Accumulator) error {
 			return err
 		}
 
-		log.Println("I! [inputs.statsd] Statsd UDP listener listening on: ", conn.LocalAddr().String())
+		addr := conn.LocalAddr()
+		log.Println("I! [inputs.statsd] Statsd UDP listener listening on: ", addr.String())
+		s.ListenAddr <- addr
 		s.UDPlistener = conn
 
 		s.wg.Add(1)
@@ -387,7 +393,9 @@ func (s *Statsd) Start(ac telegraf.Accumulator) error {
 			return err
 		}
 
-		log.Println("I! [inputs.statsd] TCP Statsd listening on: ", listener.Addr().String())
+		addr := listener.Addr()
+		log.Println("I! [inputs.statsd] TCP Statsd listening on: ", addr.String())
+		s.ListenAddr <- addr
 		s.TCPlistener = listener
 
 		s.wg.Add(1)
