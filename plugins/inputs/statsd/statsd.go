@@ -76,6 +76,9 @@ type Statsd struct {
 	// see https://github.com/influxdata/telegraf/pull/992
 	UDPPacketSize int `toml:"udp_packet_size"`
 
+	// Channel for reporting the listen address for the statsd server after it starts.
+	ListenAddr chan net.Addr
+
 	sync.Mutex
 	// Lock for preventing a data race during resource cleanup
 	cleanup sync.Mutex
@@ -300,6 +303,7 @@ func (s *Statsd) Start(_ telegraf.Accumulator) error {
 	s.counters = make(map[string]cachedcounter)
 	s.sets = make(map[string]cachedset)
 	s.timings = make(map[string]cachedtimings)
+	s.ListenAddr = make(chan net.Addr, 1)
 
 	s.Lock()
 	defer s.Unlock()
@@ -360,7 +364,11 @@ func (s *Statsd) tcpListen() error {
 		log.Fatalf("ERROR: ListenTCP - %s", err)
 		return err
 	}
-	log.Println("I! TCP Statsd listening on: ", s.TCPlistener.Addr().String())
+
+	addr := s.TCPlistener.Addr()
+	log.Println("I! TCP Statsd listening on: ", addr.String())
+	s.ListenAddr <- addr
+
 	for {
 		select {
 		case <-s.done:
@@ -409,7 +417,10 @@ func (s *Statsd) udpListen() error {
 	if err != nil {
 		log.Fatalf("ERROR: ListenUDP - %s", err)
 	}
-	log.Println("I! Statsd UDP listener listening on: ", s.UDPlistener.LocalAddr().String())
+
+	addr := s.UDPlistener.LocalAddr()
+	log.Println("I! Statsd UDP listener listening on: ", addr.String())
+	s.ListenAddr <- addr
 
 	buf := make([]byte, UDP_MAX_PACKET_SIZE)
 	for {
