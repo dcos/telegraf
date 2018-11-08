@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -113,6 +114,11 @@ func (dm *DCOSMetadata) Apply(in ...telegraf.Metric) []telegraf.Metric {
 // the rate_limit option in configuration. Optionally, the container IDs which
 // caused the refresh may be passed in to be logged.
 func (dm *DCOSMetadata) refresh(cids ...string) {
+	whitelistMap := map[string]bool{}
+	for _, label := range dm.Whitelist {
+		whitelistMap[label] = true
+	}
+
 	dm.once.Do(func() {
 		// Subsequent calls to refresh() will be ignored until the RateLimit period
 		// has expired
@@ -140,7 +146,7 @@ func (dm *DCOSMetadata) refresh(cids ...string) {
 			log.Printf("E! %s", err)
 			return
 		}
-		err = dm.cache(state)
+		err = dm.cache(state, whitelistMap)
 		if err != nil {
 			log.Printf("E! %s", err)
 		}
@@ -148,7 +154,8 @@ func (dm *DCOSMetadata) refresh(cids ...string) {
 }
 
 // getState requests state from the operator API
-func (dm *DCOSMetadata) getState(ctx context.Context, cli calls.Sender) (*agent.Response_GetState, error) {
+func (dm *DCOSMetadata) getState(ctx context.Context, cli calls.Sender) (*agent.Response_GetState,
+	error) {
 	resp, err := cli.Send(ctx, calls.NonStreaming(calls.GetState()))
 	if err != nil {
 		return nil, err
@@ -166,7 +173,8 @@ func (dm *DCOSMetadata) getState(ctx context.Context, cli calls.Sender) (*agent.
 }
 
 // cache caches container info from state
-func (dm *DCOSMetadata) cache(gs *agent.Response_GetState) error {
+func (dm *DCOSMetadata) cache(gs *agent.Response_GetState,
+	whitelist map[string]bool) error {
 	dm.mu.Lock()
 	defer dm.mu.Unlock()
 
@@ -198,7 +206,7 @@ func (dm *DCOSMetadata) cache(gs *agent.Response_GetState) error {
 				taskName:      t.GetName(),
 				executorName:  eName,
 				frameworkName: frameworkNames[t.GetFrameworkID().Value],
-				taskLabels:    mapTaskLabels(t.GetLabels(), dm.Whitelist),
+				taskLabels:    mapTaskLabels(t.GetLabels(), whitelist),
 			}
 		}
 		if pcid != "" {
@@ -299,25 +307,16 @@ func mapExecutorNames(ge *agent.Response_GetExecutors) map[string]string {
 	return results
 }
 
-func contains(list []string, target string) bool {
-	for _, str := range list {
-		if str == target {
-			return true
-		}
-	}
-	return false
-}
-
 // mapTaskLabels returns a map of all task labels prefixed DCOS_METRICS_
 // or included in list of whitelisted labels
-func mapTaskLabels(labels *mesos.Labels, whitelist []string) map[string]string {
+func mapTaskLabels(labels *mesos.Labels, whitelisted map[string]bool) map[string]string {
 	results := map[string]string{}
 	if labels != nil {
 		for _, l := range labels.GetLabels() {
 			k := l.GetKey()
 			if strings.HasPrefix(k, "DCOS_METRICS_") {
 				results[k[13:]] = l.GetValue()
-			} else if contains(whitelist, k) {
+			} else if whitelisted[k] {
 				results[k] = l.GetValue()
 			}
 		}
