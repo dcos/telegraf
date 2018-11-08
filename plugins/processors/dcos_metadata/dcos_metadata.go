@@ -315,7 +315,7 @@ func mapTaskLabels(labels *mesos.Labels, whitelist []string) map[string]string {
 	if labels != nil {
 		for _, l := range labels.GetLabels() {
 			k := l.GetKey()
-			if len(k) > 13 && k[:13] == "DCOS_METRICS_" {
+			if strings.HasPrefix(k, "DCOS_METRICS_") {
 				results[k[13:]] = l.GetValue()
 			} else if contains(whitelist, k) {
 				results[k] = l.GetValue()
