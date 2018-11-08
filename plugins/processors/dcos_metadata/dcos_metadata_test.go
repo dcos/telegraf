@@ -85,8 +85,8 @@ var (
 			// We do expect the cache to be updated when apply is done
 			containers: map[string]containerInfo{
 				"abc123": containerInfo{"abc123", "task", "executor", "framework",
-					// Ensure that the tags are picked up from state
-					map[string]string{"FOO": "bar", "BAZ": "qux"}},
+					// Ensure that the tags are picked up from state, including whitelisted ones
+					map[string]string{"FOO": "bar", "BAZ": "qux", "WHITELISTED_METRIC": "foobar"}},
 			},
 		},
 		// One metric without a container ID; nothing to do
@@ -232,6 +232,7 @@ func TestApply(t *testing.T) {
 				MesosAgentUrl: server.URL,
 				Timeout:       internal.Duration{Duration: 100 * time.Millisecond},
 				RateLimit:     internal.Duration{Duration: 50 * time.Millisecond},
+				Whitelist:     []string{"WHITELISTED_METRIC"},
 				containers:    tc.cachedContainers,
 			}
 

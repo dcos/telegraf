@@ -119,8 +119,11 @@
                             {
                               "key": "DCOS_METRICS_BAZ",
                               "value": "qux"
+                            },
+                            {
+                                "key": "WHITELISTED_METRIC",
+                                "value": "foobar"
                             }
-
                         ]
                     },
                     "discovery": {

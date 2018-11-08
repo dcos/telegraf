@@ -29,6 +29,7 @@ type DCOSMetadata struct {
 	RateLimit         internal.Duration
 	CaCertificatePath string
 	IamConfigPath     string
+	Whitelist         []string
 	containers        map[string]containerInfo
 	mu                sync.Mutex
 	once              Once
@@ -52,9 +53,11 @@ const sampleConfig = `
 	timeout = "10s"
 	## The minimum period between requests to the mesos agent
 	rate_limit = "5s"
-  ## Optional IAM configuration
-  # ca_certificate_path = "/run/dcos/pki/CA/ca-bundle.crt"
-  # iam_config_path = "/run/dcos/etc/dcos-telegraf/service_account.json"
+	## List of labels to always add to each metric as tags
+	whitelist = []
+	## Optional IAM configuration
+	# ca_certificate_path = "/run/dcos/pki/CA/ca-bundle.crt"
+	# iam_config_path = "/run/dcos/etc/dcos-telegraf/service_account.json"
 `
 
 // SampleConfig returns the default configuration
@@ -195,7 +198,7 @@ func (dm *DCOSMetadata) cache(gs *agent.Response_GetState) error {
 				taskName:      t.GetName(),
 				executorName:  eName,
 				frameworkName: frameworkNames[t.GetFrameworkID().Value],
-				taskLabels:    mapTaskLabels(t.GetLabels()),
+				taskLabels:    mapTaskLabels(t.GetLabels(), dm.Whitelist),
 			}
 		}
 		if pcid != "" {
@@ -296,16 +299,26 @@ func mapExecutorNames(ge *agent.Response_GetExecutors) map[string]string {
 	return results
 }
 
+func contains(list []string, target string) bool {
+	for _, str := range list {
+		if str == target {
+			return true
+		}
+	}
+	return false
+}
+
 // mapTaskLabels returns a map of all task labels prefixed DCOS_METRICS_
-func mapTaskLabels(labels *mesos.Labels) map[string]string {
+// or included in list of whitelisted labels
+func mapTaskLabels(labels *mesos.Labels, whitelist []string) map[string]string {
 	results := map[string]string{}
 	if labels != nil {
 		for _, l := range labels.GetLabels() {
 			k := l.GetKey()
-			if len(k) > 13 {
-				if k[:13] == "DCOS_METRICS_" {
-					results[k[13:]] = l.GetValue()
-				}
+			if len(k) > 13 && k[:13] == "DCOS_METRICS_" {
+				results[k[13:]] = l.GetValue()
+			} else if contains(whitelist, k) {
+				results[k] = l.GetValue()
 			}
 		}
 	}
