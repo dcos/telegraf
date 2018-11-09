@@ -18,6 +18,10 @@ appropriate metadata in the form of DC/OS primitives.
   rate_limit = "5s"
   ## List of labels to always add to each metric as tags
   whitelist = []
+  ## List of prefixes a label should have in order to be added
+  ## to each metric as tags; the prefix is stripped from the
+  ## label when tagging
+  whitelist_prefix = []
   ## Optional IAM configuration
   # ca_certificate_path = "/run/dcos/pki/CA/ca-bundle.crt"
   # iam_config_path = "/run/dcos/etc/dcos-telegraf/service_account.json"
