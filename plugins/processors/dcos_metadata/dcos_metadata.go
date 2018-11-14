@@ -330,7 +330,7 @@ func mapTaskLabels(labels *mesos.Labels, whitelisted map[string]bool,
 			k := l.GetKey()
 			if whitelisted[k] {
 				results[k] = l.GetValue()
-			} else if pre, ok := containsWhitelistedPrefix(k, whitelistPrefix); ok {
+			} else if pre, ok := containsWhitelistedPrefix(k, whitelistPrefix); ok && len(k) > len(pre) {
 				results[k[len(pre):]] = l.GetValue()
 			}
 		}
