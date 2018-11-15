@@ -320,8 +320,8 @@ func containsWhitelistedPrefix(key string, whitelist []string) (prefix string, c
 	return "", false
 }
 
-// mapTaskLabels returns a map of all task labels prefixed DCOS_METRICS_
-// or included in list of whitelisted labels
+// mapTaskLabels returns a map of all task labels included in the list of
+// whitelisted labels or prefixed with strings in the prefix whitelist
 func mapTaskLabels(labels *mesos.Labels, whitelisted map[string]bool,
 	whitelistPrefix []string) map[string]string {
 	results := map[string]string{}
