@@ -15,6 +15,7 @@ import (
 type DCOSConfig struct {
 	CACertificatePath string `toml:"ca_certificate_path"`
 	IAMConfigPath     string `toml:"iam_config_path"`
+	UserAgent         string `toml:"user_agent"`
 }
 
 // transport returns a transport implementing http.RoundTripper
@@ -25,9 +26,20 @@ func (c *DCOSConfig) transport() (http.RoundTripper, error) {
 	}
 
 	if c.IAMConfigPath != "" {
-		rt, err := transport.NewRoundTripper(
-			tr,
-			transport.OptionReadIAMConfig(c.IAMConfigPath))
+		var rt http.RoundTripper
+		var err error
+		if c.UserAgent != "" {
+			rt, err = transport.NewRoundTripper(
+				tr,
+				transport.OptionReadIAMConfig(c.IAMConfigPath),
+				transport.OptionUserAgent(c.UserAgent),
+			)
+		} else {
+			rt, err = transport.NewRoundTripper(
+				tr,
+				transport.OptionReadIAMConfig(c.IAMConfigPath),
+			)
+		}
 		if err != nil {
 			return nil, err
 		}

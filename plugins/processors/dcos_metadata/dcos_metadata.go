@@ -31,6 +31,7 @@ type DCOSMetadata struct {
 	CaCertificatePath          string
 	IamConfigPath              string
 	Whitelist, WhitelistPrefix []string
+	UserAgent                  string
 	containers                 map[string]containerInfo
 	mu                         sync.Mutex
 	once                       Once
@@ -60,6 +61,8 @@ const sampleConfig = `
 	## to each metric as tags; the prefix is stripped from the
 	## label when tagging
 	whitelist_prefix = []
+  	## The user agent to send with requests
+	user_agent = "telegraf-dcos-metadata"
 	## Optional IAM configuration
 	# ca_certificate_path = "/run/dcos/pki/CA/ca-bundle.crt"
 	# iam_config_path = "/run/dcos/etc/dcos-telegraf/service_account.json"
@@ -248,9 +251,19 @@ func (dm *DCOSMetadata) getClient() (*httpcli.Client, error) {
 	}
 
 	if dm.IamConfigPath != "" {
-		if rt, err = transport.NewRoundTripper(
-			tr,
-			transport.OptionReadIAMConfig(dm.IamConfigPath)); err != nil {
+		if dm.UserAgent != "" {
+			rt, err = transport.NewRoundTripper(
+				tr,
+				transport.OptionReadIAMConfig(dm.IamConfigPath),
+				transport.OptionUserAgent(dm.UserAgent),
+			)
+		} else {
+			rt, err = transport.NewRoundTripper(
+				tr,
+				transport.OptionReadIAMConfig(dm.IamConfigPath),
+			)
+		}
+		if err != nil {
 			return client, err
 		}
 		cfgOpts = append(cfgOpts, httpcli.RoundTripper(rt))

@@ -683,11 +683,65 @@ func TestCreateHTTPClientIAM(t *testing.T) {
 	require.NotNil(client)
 	require.NotNil(client.Transport)
 
-	// test that all requests on client send an Authorization header with token
+	// test that all requests on client send an Authorization header with token and default User-Agent header
 	tokenTestServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		auth := r.Header.Get("Authorization")
 		if auth != "token="+testToken {
 			t.Fatalf("Expected request header: `Authorization: token=%s`. Got: %s", testToken, auth)
+		}
+		userAgent := r.Header.Get("User-Agent")
+		if userAgent != "dcos-go" {
+			t.Fatalf("Expected request header: `User-Agent: dcos-go`. Got: %s", userAgent)
+		}
+	}))
+	defer tokenTestServer.Close()
+
+	c := http.Client{
+		Transport: client.Transport,
+	}
+
+	resp, err := c.Get(tokenTestServer.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+}
+
+func TestCreateHTTPClientUserAgent(t *testing.T) {
+	require := require.New(t)
+
+	server := startTestServer(t)
+	defer server.Close()
+
+	// create tmp json file using mocked server.URL for loginEndpoint
+	tmpFile := "/tmp/service_account.json"
+	modifiedServiceAcctString := strings.Replace(pki.ReadIAMAccount(), "http://127.0.0.1:8101", server.URL, 1)
+	require.Nil(ioutil.WriteFile(tmpFile, []byte(modifiedServiceAcctString), 0644))
+	defer os.Remove(tmpFile)
+
+	testUserAgent := "telegraf-mesos"
+	m := Mesos{
+		DCOSConfig: DCOSConfig{
+			CACertificatePath: pki.CACertPath(),
+			IAMConfigPath:     tmpFile,
+			UserAgent:         testUserAgent,
+		},
+	}
+
+	client, err := m.createHttpClient()
+	require.NoError(err)
+	require.NotNil(client)
+	require.NotNil(client.Transport)
+
+	// test that all requests on client send an Authorization header with token and configured User-Agent header
+	tokenTestServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		auth := r.Header.Get("Authorization")
+		if auth != "token="+testToken {
+			t.Fatalf("Expected request header: `Authorization: token=%s`. Got: %s", testToken, auth)
+		}
+		userAgent := r.Header.Get("User-Agent")
+		if userAgent != testUserAgent {
+			t.Fatalf("Expected request header: `User-Agent: %s`. Got: %s", testUserAgent, userAgent)
 		}
 	}))
 	defer tokenTestServer.Close()

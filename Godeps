@@ -14,7 +14,7 @@ github.com/couchbase/go-couchbase bfe555a140d53dc1adf390f1a1d4b0fd4ceadb28
 github.com/couchbase/gomemcached 4a25d2f4e1dea9ea7dd76dfd943407abf9b07d29
 github.com/couchbase/goutils 5823a0cbaaa9008406021dc5daf80125ea30bba6
 github.com/davecgh/go-spew 346938d642f2ec3594ed81d874461961cd0faa76
-github.com/dcos/dcos-go b2b2d14915a3e4e112ae93cad44c9e1997c9ff42
+github.com/dcos/dcos-go 737f1c7403bf2022436e201947576ba63bad2394
 github.com/dcos/dcos-metrics aa08dd7bd88e76dcc67d0171ea0ae30c5b818d83
 github.com/dgrijalva/jwt-go dbeaa9332f19a944acb5736b4456cfcc02140e29
 github.com/docker/docker f5ec1e2936dcbe7b5001c2b817188b095c700c27

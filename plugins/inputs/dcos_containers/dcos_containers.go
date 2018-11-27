@@ -27,6 +27,8 @@ const sampleConfig = `
   mesos_agent_url = "http://$NODE_PRIVATE_IP:5051"
   ## The period after which requests to mesos agent should time out
   # timeout = "10s"
+  ## The user agent to send with requests
+  user_agent = "telegraf-dcos-containers"
   ## Optional IAM configuration
   # ca_certificate_path = "/run/dcos/pki/CA/ca-bundle.crt"
   # iam_config_path = "/run/dcos/etc/dcos-telegraf/service_account.json"
@@ -38,6 +40,7 @@ type DCOSContainers struct {
 	Timeout           internal.Duration
 	CaCertificatePath string
 	IamConfigPath     string
+	UserAgent         string
 	client            *httpcli.Client
 }
 
@@ -156,9 +159,19 @@ func (dc *DCOSContainers) getClient() (*httpcli.Client, error) {
 	}
 
 	if dc.IamConfigPath != "" {
-		if rt, err = transport.NewRoundTripper(
-			tr,
-			transport.OptionReadIAMConfig(dc.IamConfigPath)); err != nil {
+		if dc.UserAgent != "" {
+			rt, err = transport.NewRoundTripper(
+				tr,
+				transport.OptionReadIAMConfig(dc.IamConfigPath),
+				transport.OptionUserAgent(dc.UserAgent),
+			)
+		} else {
+			rt, err = transport.NewRoundTripper(
+				tr,
+				transport.OptionReadIAMConfig(dc.IamConfigPath),
+			)
+		}
+		if err != nil {
 			return client, err
 		}
 		cfgOpts = append(cfgOpts, httpcli.RoundTripper(rt))
