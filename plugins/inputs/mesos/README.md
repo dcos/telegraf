@@ -37,6 +37,8 @@ For more information, please check the [Mesos Observability Metrics](http://meso
   #   "tasks",
   #   "messages",
   # ]
+  ## The user agent to send with requests
+  user_agent = "telegraf-mesos"
 
   ## Optional TLS Config
   # tls_ca = "/etc/telegraf/ca.pem"
