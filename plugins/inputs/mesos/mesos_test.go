@@ -2,6 +2,7 @@ package mesos
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
@@ -590,61 +591,11 @@ func TestURLTagDoesNotModify(t *testing.T) {
 	require.Equal(t, v, "http://localhost:5051")
 }
 
-var pki = testutil.NewPKI("../../../testutil/pki")
-
-func TestCreateHTTPClientTLS(t *testing.T) {
-	require := require.New(t)
-
-	m := Mesos{
-		ClientConfig: tls.ClientConfig{
-			TLSCA:   pki.CACertPath(),
-			TLSCert: pki.ClientCertPath(),
-			TLSKey:  pki.ClientKeyPath(),
-		},
-	}
-
-	client, err := m.createHttpClient()
-	require.NoError(err)
-	require.NotNil(client)
-	require.NotNil(client.Transport)
-}
-
-func TestCreateHTTPClientInvalid(t *testing.T) {
-	require := require.New(t)
-
-	m := Mesos{
-		ClientConfig: tls.ClientConfig{
-			TLSCA:   pki.CACertPath(),
-			TLSCert: pki.ClientCertPath(),
-			TLSKey:  pki.ClientKeyPath(),
-		},
-		DCOSConfig: DCOSConfig{
-			CACertificatePath: pki.CACertPath(),
-		},
-	}
-
-	client, err := m.createHttpClient()
-	require.Error(err)
-	require.Equal("received both TLS and IAM configs but only expected one", err.Error())
-	require.Nil(client)
-}
-
-func TestCreateHTTPClientTLSCACert(t *testing.T) {
-	require := require.New(t)
-
-	m := Mesos{
-		DCOSConfig: DCOSConfig{
-			CACertificatePath: pki.CACertPath(),
-		},
-	}
-
-	client, err := m.createHttpClient()
-	require.NoError(err)
-	require.NotNil(client)
-	require.NotNil(client.Transport)
-}
-
-var testToken = "123456"
+var (
+	pki                = testutil.NewPKI("../../../testutil/pki")
+	testToken          = "123456"
+	tmpServiceAcctFile = "/tmp/service_account.json"
+)
 
 // startTestServer starts a server and serves the testToken at the loginEndpoint
 // /acs/api/v1/auth/login
@@ -659,100 +610,140 @@ func startTestServer(t *testing.T) *httptest.Server {
 	return httptest.NewServer(router)
 }
 
-func TestCreateHTTPClientIAM(t *testing.T) {
-	require := require.New(t)
-
-	server := startTestServer(t)
-	defer server.Close()
-
-	// create tmp json file using mocked server.URL for loginEndpoint
-	tmpFile := "/tmp/service_account.json"
-	modifiedServiceAcctString := strings.Replace(pki.ReadIAMAccount(), "http://127.0.0.1:8101", server.URL, 1)
-	require.Nil(ioutil.WriteFile(tmpFile, []byte(modifiedServiceAcctString), 0644))
-	defer os.Remove(tmpFile)
-
-	m := Mesos{
-		DCOSConfig: DCOSConfig{
-			CACertificatePath: pki.CACertPath(),
-			IAMConfigPath:     tmpFile,
-		},
-	}
-
-	client, err := m.createHttpClient()
-	require.NoError(err)
-	require.NotNil(client)
-	require.NotNil(client.Transport)
-
-	// test that all requests on client send an Authorization header with token and default User-Agent header
-	tokenTestServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		auth := r.Header.Get("Authorization")
-		if auth != "token="+testToken {
-			t.Fatalf("Expected request header: `Authorization: token=%s`. Got: %s", testToken, auth)
-		}
-		userAgent := r.Header.Get("User-Agent")
-		if userAgent != "dcos-go" {
-			t.Fatalf("Expected request header: `User-Agent: dcos-go`. Got: %s", userAgent)
-		}
-	}))
-	defer tokenTestServer.Close()
-
-	c := http.Client{
-		Transport: client.Transport,
-	}
-
-	resp, err := c.Get(tokenTestServer.URL)
-	if err != nil {
-		t.Fatal(err)
-	}
-	resp.Body.Close()
+type testCase struct {
+	fixture      string
+	tlsConfig    tls.ClientConfig
+	dcosConfig   DCOSConfig
+	iam          bool
+	header       string
+	userAgent    string
+	expClientErr error
+	checkFunc    func(string) error
 }
 
-func TestCreateHTTPClientUserAgent(t *testing.T) {
-	require := require.New(t)
-
-	server := startTestServer(t)
-	defer server.Close()
-
-	// create tmp json file using mocked server.URL for loginEndpoint
-	tmpFile := "/tmp/service_account.json"
-	modifiedServiceAcctString := strings.Replace(pki.ReadIAMAccount(), "http://127.0.0.1:8101", server.URL, 1)
-	require.Nil(ioutil.WriteFile(tmpFile, []byte(modifiedServiceAcctString), 0644))
-	defer os.Remove(tmpFile)
-
-	testUserAgent := "telegraf-mesos"
-	m := Mesos{
-		DCOSConfig: DCOSConfig{
-			CACertificatePath: pki.CACertPath(),
-			IAMConfigPath:     tmpFile,
-			UserAgent:         testUserAgent,
+var (
+	TEST_CASES = []testCase{
+		{
+			fixture: "TLS",
+			tlsConfig: tls.ClientConfig{
+				TLSCA:   pki.CACertPath(),
+				TLSCert: pki.ClientCertPath(),
+				TLSKey:  pki.ClientKeyPath(),
+			},
+		},
+		{
+			fixture: "TLS CACert",
+			dcosConfig: DCOSConfig{
+				CACertificatePath: pki.CACertPath(),
+			},
+		},
+		{
+			fixture:      "Invalid",
+			expClientErr: errors.New("received both TLS and IAM configs but only expected one"),
+			tlsConfig: tls.ClientConfig{
+				TLSCA:   pki.CACertPath(),
+				TLSCert: pki.ClientCertPath(),
+				TLSKey:  pki.ClientKeyPath(),
+			},
+			dcosConfig: DCOSConfig{
+				CACertificatePath: pki.CACertPath(),
+			},
+		},
+		{
+			fixture: "IAM auth token header",
+			iam:     true,
+			dcosConfig: DCOSConfig{
+				CACertificatePath: pki.CACertPath(),
+				IAMConfigPath:     tmpServiceAcctFile,
+			},
+			header: "Authorization",
+			checkFunc: func(header string) error {
+				if header != "token="+testToken {
+					return fmt.Errorf("Expected request header: `Authorization: token=%s`. Got: %s", testToken, header)
+				}
+				return nil
+			},
+		},
+		{
+			fixture: "Default user-agent header",
+			iam:     true,
+			dcosConfig: DCOSConfig{
+				CACertificatePath: pki.CACertPath(),
+				IAMConfigPath:     tmpServiceAcctFile,
+			},
+			header:    "User-Agent",
+			userAgent: "",
+			checkFunc: func(header string) error {
+				if header != "dcos-go" {
+					return fmt.Errorf("Expected request header: `User-Agent: dcos-go`. Got: %s", header)
+				}
+				return nil
+			},
+		},
+		{
+			fixture: "Configured user-agent header",
+			iam:     true,
+			dcosConfig: DCOSConfig{
+				CACertificatePath: pki.CACertPath(),
+				IAMConfigPath:     tmpServiceAcctFile,
+				UserAgent:         "telegraf-mesos",
+			},
+			header: "User-Agent",
+			checkFunc: func(header string) error {
+				if header != "telegraf-mesos" {
+					return fmt.Errorf("Expected request header: `User-Agent: telegraf-mesos`. Got: %s", header)
+				}
+				return nil
+			},
 		},
 	}
+)
 
-	client, err := m.createHttpClient()
-	require.NoError(err)
-	require.NotNil(client)
-	require.NotNil(client.Transport)
+func TestCreateHTTPClient(t *testing.T) {
+	require := require.New(t)
 
-	// test that all requests on client send an Authorization header with token and configured User-Agent header
-	tokenTestServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		auth := r.Header.Get("Authorization")
-		if auth != "token="+testToken {
-			t.Fatalf("Expected request header: `Authorization: token=%s`. Got: %s", testToken, auth)
-		}
-		userAgent := r.Header.Get("User-Agent")
-		if userAgent != testUserAgent {
-			t.Fatalf("Expected request header: `User-Agent: %s`. Got: %s", testUserAgent, userAgent)
-		}
-	}))
-	defer tokenTestServer.Close()
+	for _, tc := range TEST_CASES {
+		t.Run(tc.fixture, func(t *testing.T) {
+			if tc.iam {
+				server := startTestServer(t)
+				defer server.Close()
 
-	c := http.Client{
-		Transport: client.Transport,
+				// create temp json file using mocked server.URL for loginEndpoint
+				modifiedServiceAcctString := strings.Replace(pki.ReadIAMAccount(), "http://127.0.0.1:8101", server.URL, 1)
+				require.Nil(ioutil.WriteFile(tmpServiceAcctFile, []byte(modifiedServiceAcctString), 0644))
+				defer os.Remove(tmpServiceAcctFile)
+			}
+
+			m := Mesos{
+				ClientConfig: tc.tlsConfig,
+				DCOSConfig:   tc.dcosConfig,
+			}
+			client, err := m.createHttpClient()
+			require.Equal(tc.expClientErr, err)
+			if err == nil {
+				require.NotNil(client)
+				require.NotNil(client.Transport)
+			}
+
+			if tc.iam {
+				// test that all requests on client send an Authorization header with token
+				tokenTestServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					if err := tc.checkFunc(r.Header.Get(tc.header)); err != nil {
+						t.Fatalf(err.Error())
+					}
+				}))
+				defer tokenTestServer.Close()
+
+				c := http.Client{
+					Transport: client.Transport,
+				}
+
+				resp, err := c.Get(tokenTestServer.URL)
+				if err != nil {
+					t.Fatal(err)
+				}
+				resp.Body.Close()
+			}
+		})
 	}
-
-	resp, err := c.Get(tokenTestServer.URL)
-	if err != nil {
-		t.Fatal(err)
-	}
-	resp.Body.Close()
 }
