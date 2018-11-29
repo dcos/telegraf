@@ -289,6 +289,22 @@ func (m *Mesos) Gather(acc telegraf.Accumulator) error {
 	return nil
 }
 
+type roundTripper struct {
+	r         http.RoundTripper
+	userAgent string
+}
+
+var defaultUserAgent = "telegraf-mesos"
+
+// RoundTrip is an implementation of the RoundTripper interface.
+func (rt roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	req.Header.Set("User-Agent", defaultUserAgent)
+	if rt.userAgent != "" {
+		req.Header.Set("User-Agent", rt.userAgent)
+	}
+	return rt.r.RoundTrip(req)
+}
+
 // createHttpClient returns an http client configured with the available levels of
 // TLS and IAM according to flags set in the config
 func (m *Mesos) createHttpClient() (*http.Client, error) {
@@ -302,9 +318,12 @@ func (m *Mesos) createHttpClient() (*http.Client, error) {
 	}
 
 	client := &http.Client{
-		Transport: &http.Transport{
-			Proxy:           http.ProxyFromEnvironment,
-			TLSClientConfig: tlsCfg,
+		Transport: roundTripper{
+			r: &http.Transport{
+				Proxy:           http.ProxyFromEnvironment,
+				TLSClientConfig: tlsCfg,
+			},
+			userAgent: m.UserAgent,
 		},
 		Timeout: 4 * time.Second,
 	}
@@ -314,7 +333,10 @@ func (m *Mesos) createHttpClient() (*http.Client, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error creating transport: %s", err)
 		}
-		client.Transport = transport
+		client.Transport = roundTripper{
+			r:         transport,
+			userAgent: m.UserAgent,
+		}
 	}
 
 	return client, nil

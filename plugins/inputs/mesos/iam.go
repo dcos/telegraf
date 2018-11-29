@@ -38,6 +38,7 @@ func (c *DCOSConfig) transport() (http.RoundTripper, error) {
 			rt, err = transport.NewRoundTripper(
 				tr,
 				transport.OptionReadIAMConfig(c.IAMConfigPath),
+				transport.OptionUserAgent(defaultUserAgent),
 			)
 		}
 		if err != nil {

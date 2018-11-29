@@ -622,6 +622,19 @@ type testCase struct {
 var (
 	TEST_CASES = []testCase{
 		{
+			fixture:      "Default user-agent header",
+			header:       "User-Agent",
+			expHeaderVal: "telegraf-mesos",
+		},
+		{
+			fixture: "Configured user-agent header",
+			dcosConfig: DCOSConfig{
+				UserAgent: "configured-telegraf-mesos",
+			},
+			header:       "User-Agent",
+			expHeaderVal: "configured-telegraf-mesos",
+		},
+		{
 			fixture: "TLS",
 			tlsConfig: tls.ClientConfig{
 				TLSCA:   pki.CACertPath(),
@@ -648,7 +661,7 @@ var (
 			expClientErr: errors.New("received both TLS and IAM configs but only expected one"),
 		},
 		{
-			fixture: "IAM auth token header",
+			fixture: "[IAM] Auth token header",
 			dcosConfig: DCOSConfig{
 				CACertificatePath: pki.CACertPath(),
 				IAMConfigPath:     tmpServiceAcctFile,
@@ -657,24 +670,23 @@ var (
 			expHeaderVal: "token=" + testToken,
 		},
 		{
-			fixture: "Default user-agent header",
+			fixture: "[IAM] Default user-agent header",
 			dcosConfig: DCOSConfig{
 				CACertificatePath: pki.CACertPath(),
 				IAMConfigPath:     tmpServiceAcctFile,
-			},
-			header:       "User-Agent",
-			userAgent:    "",
-			expHeaderVal: "dcos-go",
-		},
-		{
-			fixture: "Configured user-agent header",
-			dcosConfig: DCOSConfig{
-				CACertificatePath: pki.CACertPath(),
-				IAMConfigPath:     tmpServiceAcctFile,
-				UserAgent:         "telegraf-mesos",
 			},
 			header:       "User-Agent",
 			expHeaderVal: "telegraf-mesos",
+		},
+		{
+			fixture: "[IAM] Configured user-agent header",
+			dcosConfig: DCOSConfig{
+				CACertificatePath: pki.CACertPath(),
+				IAMConfigPath:     tmpServiceAcctFile,
+				UserAgent:         "configured-telegraf-mesos",
+			},
+			header:       "User-Agent",
+			expHeaderVal: "configured-telegraf-mesos",
 		},
 	}
 )

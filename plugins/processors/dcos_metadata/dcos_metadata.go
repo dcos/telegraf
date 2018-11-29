@@ -229,6 +229,22 @@ func (dm *DCOSMetadata) cache(gs *agent.Response_GetState,
 	return nil
 }
 
+type roundTripper struct {
+	r         http.RoundTripper
+	userAgent string
+}
+
+var defaultUserAgent = "telegraf-dcos-metadata"
+
+// RoundTrip is an implementation of the RoundTripper interface.
+func (rt roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	req.Header.Set("User-Agent", defaultUserAgent)
+	if rt.userAgent != "" {
+		req.Header.Set("User-Agent", rt.userAgent)
+	}
+	return rt.r.RoundTrip(req)
+}
+
 // getClient returns an httpcli client configured with the available levels of
 // TLS and IAM according to flags set in the config
 func (dm *DCOSMetadata) getClient() (*httpcli.Client, error) {
@@ -236,7 +252,11 @@ func (dm *DCOSMetadata) getClient() (*httpcli.Client, error) {
 		return dm.client, nil
 	}
 	uri := dm.MesosAgentUrl + "/api/v1"
-	client := httpcli.New(httpcli.Endpoint(uri))
+	userAgent := defaultUserAgent
+	if dm.UserAgent != "" {
+		userAgent = dm.UserAgent
+	}
+	client := httpcli.New(httpcli.Endpoint(uri), httpcli.DefaultHeader("User-Agent", userAgent))
 	cfgOpts := []httpcli.ConfigOpt{}
 	opts := []httpcli.Opt{}
 
@@ -251,18 +271,11 @@ func (dm *DCOSMetadata) getClient() (*httpcli.Client, error) {
 	}
 
 	if dm.IamConfigPath != "" {
-		if dm.UserAgent != "" {
-			rt, err = transport.NewRoundTripper(
-				tr,
-				transport.OptionReadIAMConfig(dm.IamConfigPath),
-				transport.OptionUserAgent(dm.UserAgent),
-			)
-		} else {
-			rt, err = transport.NewRoundTripper(
-				tr,
-				transport.OptionReadIAMConfig(dm.IamConfigPath),
-			)
-		}
+		rt, err = transport.NewRoundTripper(
+			tr,
+			transport.OptionReadIAMConfig(dm.IamConfigPath),
+			transport.OptionUserAgent(userAgent),
+		)
 		if err != nil {
 			return client, err
 		}
