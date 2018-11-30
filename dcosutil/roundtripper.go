@@ -1,6 +1,8 @@
 package dcosutil
 
-import "net/http"
+import (
+	"net/http"
+)
 
 type roundTripper struct {
 	r         http.RoundTripper
@@ -16,6 +18,6 @@ func NewRoundTripper(rt http.RoundTripper, userAgent string) *roundTripper {
 
 // RoundTrip is an implementation of the RoundTripper interface.
 func (rt roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	req.Header.Set("User-Agent", rt.userAgent)
+	req.Header.Set("User-Agent", GetUserAgent(rt.userAgent))
 	return rt.r.RoundTrip(req)
 }

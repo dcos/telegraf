@@ -37,7 +37,6 @@ const sampleConfig = `
 type DCOSContainers struct {
 	MesosAgentUrl string
 	Timeout       internal.Duration
-	UserAgent     string
 	client        *httpcli.Client
 	dcosutil.DCOSConfig
 }
@@ -134,8 +133,6 @@ func (dc *DCOSContainers) getContainers(ctx context.Context, cli calls.Sender) (
 	return gc, nil
 }
 
-var defaultUserAgent = "telegraf-dcos-containers"
-
 // getClient returns an httpcli client configured with the available levels of
 // TLS and IAM according to flags set in the config
 func (dc *DCOSContainers) getClient() (*httpcli.Client, error) {
@@ -144,11 +141,8 @@ func (dc *DCOSContainers) getClient() (*httpcli.Client, error) {
 	}
 
 	uri := dc.MesosAgentUrl + "/api/v1"
-	userAgent := defaultUserAgent
-	if dc.UserAgent != "" {
-		userAgent = dc.UserAgent
-	}
-	client := httpcli.New(httpcli.Endpoint(uri), httpcli.DefaultHeader("User-Agent", userAgent))
+	client := httpcli.New(httpcli.Endpoint(uri), httpcli.DefaultHeader("User-Agent",
+		dcosutil.GetUserAgent(dc.UserAgent)))
 	cfgOpts := []httpcli.ConfigOpt{}
 	opts := []httpcli.Opt{}
 
@@ -156,10 +150,9 @@ func (dc *DCOSContainers) getClient() (*httpcli.Client, error) {
 	var err error
 
 	if dc.CACertificatePath != "" {
-		if rt, err = dc.DCOSConfig.Transport(userAgent); err != nil {
+		if rt, err = dc.DCOSConfig.Transport(); err != nil {
 			return nil, fmt.Errorf("error creating transport: %s", err)
 		}
-
 		if dc.IAMConfigPath != "" {
 			cfgOpts = append(cfgOpts, httpcli.RoundTripper(rt))
 		}

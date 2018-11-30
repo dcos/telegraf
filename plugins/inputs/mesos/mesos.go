@@ -35,7 +35,6 @@ type Mesos struct {
 	Slaves     []string
 	SlaveCols  []string `toml:"slave_collections"`
 	//SlaveTasks bool
-	UserAgent string
 	tls.ClientConfig
 	dcosutil.DCOSConfig
 
@@ -291,8 +290,6 @@ func (m *Mesos) Gather(acc telegraf.Accumulator) error {
 	return nil
 }
 
-var defaultUserAgent = "telegraf-mesos"
-
 // createHttpClient returns an http client configured with the available levels of
 // TLS and IAM according to flags set in the config
 func (m *Mesos) createHttpClient() (*http.Client, error) {
@@ -305,26 +302,22 @@ func (m *Mesos) createHttpClient() (*http.Client, error) {
 		return nil, errors.New("received both TLS and IAM configs but only expected one")
 	}
 
-	userAgent := defaultUserAgent
-	if m.UserAgent != "" {
-		userAgent = m.UserAgent
-	}
 	client := &http.Client{
 		Transport: dcosutil.NewRoundTripper(
 			&http.Transport{
 				Proxy:           http.ProxyFromEnvironment,
 				TLSClientConfig: tlsCfg,
 			},
-			userAgent),
+			m.UserAgent),
 		Timeout: 4 * time.Second,
 	}
 
 	if m.CACertificatePath != "" {
-		transport, err := m.DCOSConfig.Transport(userAgent)
+		transport, err := m.DCOSConfig.Transport()
 		if err != nil {
 			return nil, fmt.Errorf("error creating transport: %s", err)
 		}
-		client.Transport = dcosutil.NewRoundTripper(transport, userAgent)
+		client.Transport = dcosutil.NewRoundTripper(transport, m.UserAgent)
 	}
 
 	return client, nil

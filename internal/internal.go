@@ -28,6 +28,12 @@ type Duration struct {
 	Duration time.Duration
 }
 
+// Version returns the telegraf agent version
+// NOTE: hardcoded for now until dcos fork of telegraf is upgraded
+func Version() string {
+	return "1.7.2-dcos"
+}
+
 // UnmarshalTOML parses the duration from the TOML config file
 func (d *Duration) UnmarshalTOML(b []byte) error {
 	var err error

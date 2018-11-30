@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	"github.com/influxdata/telegraf/dcosutil"
+	"github.com/influxdata/telegraf/internal"
 	"github.com/influxdata/telegraf/internal/tls"
 	"github.com/influxdata/telegraf/testutil"
 	"github.com/stretchr/testify/require"
@@ -615,7 +616,6 @@ type testCase struct {
 	fixture              string
 	tlsConfig            tls.ClientConfig
 	dcosConfig           dcosutil.DCOSConfig
-	userAgent            string
 	header, expHeaderVal string
 	expClientErr         error
 }
@@ -625,13 +625,15 @@ var (
 		{
 			fixture:      "Default user-agent header",
 			header:       "User-Agent",
-			expHeaderVal: "telegraf-mesos",
+			expHeaderVal: "Telegraf/" + internal.Version(),
 		},
 		{
-			fixture:      "Configured user-agent header",
-			userAgent:    "configured-telegraf-mesos",
+			fixture: "Configured user-agent header",
+			dcosConfig: dcosutil.DCOSConfig{
+				UserAgent: "configured-telegraf-mesos",
+			},
 			header:       "User-Agent",
-			expHeaderVal: "configured-telegraf-mesos",
+			expHeaderVal: "configured-telegraf-mesos/" + internal.Version(),
 		},
 		{
 			fixture: "TLS",
@@ -675,17 +677,17 @@ var (
 				IAMConfigPath:     tmpServiceAcctFile,
 			},
 			header:       "User-Agent",
-			expHeaderVal: "telegraf-mesos",
+			expHeaderVal: "Telegraf/" + internal.Version(),
 		},
 		{
 			fixture: "[IAM] Configured user-agent header",
 			dcosConfig: dcosutil.DCOSConfig{
 				CACertificatePath: pki.CACertPath(),
 				IAMConfigPath:     tmpServiceAcctFile,
+				UserAgent:         "configured-telegraf-mesos",
 			},
-			userAgent:    "configured-telegraf-mesos",
 			header:       "User-Agent",
-			expHeaderVal: "configured-telegraf-mesos",
+			expHeaderVal: "configured-telegraf-mesos/" + internal.Version(),
 		},
 	}
 )
@@ -708,7 +710,6 @@ func TestCreateHTTPClient(t *testing.T) {
 			m := Mesos{
 				ClientConfig: tc.tlsConfig,
 				DCOSConfig:   tc.dcosConfig,
-				UserAgent:    tc.userAgent,
 			}
 			client, err := m.createHttpClient()
 			require.Equal(tc.expClientErr, err)
@@ -718,20 +719,20 @@ func TestCreateHTTPClient(t *testing.T) {
 			}
 
 			if tc.header != "" {
-				tokenTestServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				headerTestServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					headerVal := r.Header.Get(tc.header)
 					if headerVal != tc.expHeaderVal {
 						t.Fatalf(fmt.Sprintf("Expected request header: `%s: %s`. Got: %s", tc.header,
 							tc.expHeaderVal, headerVal))
 					}
 				}))
-				defer tokenTestServer.Close()
+				defer headerTestServer.Close()
 
 				c := http.Client{
 					Transport: client.Transport,
 				}
 
-				resp, err := c.Get(tokenTestServer.URL)
+				resp, err := c.Get(headerTestServer.URL)
 				if err != nil {
 					t.Fatal(err)
 				}

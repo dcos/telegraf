@@ -4,10 +4,13 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/influxdata/telegraf/internal"
 
 	"github.com/dcos/dcos-go/dcos/http/transport"
 )
@@ -15,10 +18,21 @@ import (
 type DCOSConfig struct {
 	CACertificatePath string `toml:"ca_certificate_path"`
 	IAMConfigPath     string `toml:"iam_config_path"`
+	UserAgent         string `toml:"user_agent"`
+}
+
+const defaultUserAgent = "Telegraf"
+
+func GetUserAgent(override string) string {
+	userAgent := defaultUserAgent
+	if override != "" {
+		userAgent = override
+	}
+	return fmt.Sprintf("%s/%s", userAgent, internal.Version())
 }
 
 // Transport returns a transport implementing http.RoundTripper
-func (c *DCOSConfig) Transport(userAgent string) (http.RoundTripper, error) {
+func (c *DCOSConfig) Transport() (http.RoundTripper, error) {
 	tr, err := getTransport(c.CACertificatePath)
 	if err != nil {
 		return nil, err
@@ -28,7 +42,7 @@ func (c *DCOSConfig) Transport(userAgent string) (http.RoundTripper, error) {
 		rt, err := transport.NewRoundTripper(
 			tr,
 			transport.OptionReadIAMConfig(c.IAMConfigPath),
-			transport.OptionUserAgent(userAgent),
+			transport.OptionUserAgent(GetUserAgent(c.UserAgent)),
 		)
 		if err != nil {
 			return nil, err

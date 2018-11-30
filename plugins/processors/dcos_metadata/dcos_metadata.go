@@ -227,8 +227,6 @@ func (dm *DCOSMetadata) cache(gs *agent.Response_GetState,
 	return nil
 }
 
-var defaultUserAgent = "telegraf-dcos-metadata"
-
 // getClient returns an httpcli client configured with the available levels of
 // TLS and IAM according to flags set in the config
 func (dm *DCOSMetadata) getClient() (*httpcli.Client, error) {
@@ -237,11 +235,8 @@ func (dm *DCOSMetadata) getClient() (*httpcli.Client, error) {
 	}
 
 	uri := dm.MesosAgentUrl + "/api/v1"
-	userAgent := defaultUserAgent
-	if dm.UserAgent != "" {
-		userAgent = dm.UserAgent
-	}
-	client := httpcli.New(httpcli.Endpoint(uri), httpcli.DefaultHeader("User-Agent", userAgent))
+	client := httpcli.New(httpcli.Endpoint(uri), httpcli.DefaultHeader("User-Agent",
+		dcosutil.GetUserAgent(dm.UserAgent)))
 	cfgOpts := []httpcli.ConfigOpt{}
 	opts := []httpcli.Opt{}
 
@@ -249,7 +244,7 @@ func (dm *DCOSMetadata) getClient() (*httpcli.Client, error) {
 	var err error
 
 	if dm.CACertificatePath != "" {
-		if rt, err = dm.DCOSConfig.Transport(userAgent); err != nil {
+		if rt, err = dm.DCOSConfig.Transport(); err != nil {
 			return nil, fmt.Errorf("error creating transport: %s", err)
 		}
 		if dm.IAMConfigPath != "" {
