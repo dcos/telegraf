@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/influxdata/telegraf"
+	"github.com/influxdata/telegraf/dcosutil"
 	"github.com/influxdata/telegraf/internal/tls"
 	"github.com/influxdata/telegraf/plugins/inputs"
 	jsonparser "github.com/influxdata/telegraf/plugins/parsers/json"
@@ -34,8 +35,9 @@ type Mesos struct {
 	Slaves     []string
 	SlaveCols  []string `toml:"slave_collections"`
 	//SlaveTasks bool
+	UserAgent string
 	tls.ClientConfig
-	DCOSConfig
+	dcosutil.DCOSConfig
 
 	initialized bool
 	client      *http.Client
@@ -289,21 +291,7 @@ func (m *Mesos) Gather(acc telegraf.Accumulator) error {
 	return nil
 }
 
-type roundTripper struct {
-	r         http.RoundTripper
-	userAgent string
-}
-
 var defaultUserAgent = "telegraf-mesos"
-
-// RoundTrip is an implementation of the RoundTripper interface.
-func (rt roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	req.Header.Set("User-Agent", defaultUserAgent)
-	if rt.userAgent != "" {
-		req.Header.Set("User-Agent", rt.userAgent)
-	}
-	return rt.r.RoundTrip(req)
-}
 
 // createHttpClient returns an http client configured with the available levels of
 // TLS and IAM according to flags set in the config
@@ -317,26 +305,26 @@ func (m *Mesos) createHttpClient() (*http.Client, error) {
 		return nil, errors.New("received both TLS and IAM configs but only expected one")
 	}
 
+	userAgent := defaultUserAgent
+	if m.UserAgent != "" {
+		userAgent = m.UserAgent
+	}
 	client := &http.Client{
-		Transport: roundTripper{
-			r: &http.Transport{
+		Transport: dcosutil.NewRoundTripper(
+			&http.Transport{
 				Proxy:           http.ProxyFromEnvironment,
 				TLSClientConfig: tlsCfg,
 			},
-			userAgent: m.UserAgent,
-		},
+			userAgent),
 		Timeout: 4 * time.Second,
 	}
 
 	if m.CACertificatePath != "" {
-		transport, err := m.DCOSConfig.transport()
+		transport, err := m.DCOSConfig.Transport(userAgent)
 		if err != nil {
 			return nil, fmt.Errorf("error creating transport: %s", err)
 		}
-		client.Transport = roundTripper{
-			r:         transport,
-			userAgent: m.UserAgent,
-		}
+		client.Transport = dcosutil.NewRoundTripper(transport, userAgent)
 	}
 
 	return client, nil

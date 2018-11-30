@@ -13,6 +13,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/influxdata/telegraf/dcosutil"
 	"github.com/influxdata/telegraf/internal/tls"
 	"github.com/influxdata/telegraf/testutil"
 	"github.com/stretchr/testify/require"
@@ -613,9 +614,9 @@ func startTestServer(t *testing.T) *httptest.Server {
 type testCase struct {
 	fixture              string
 	tlsConfig            tls.ClientConfig
-	dcosConfig           DCOSConfig
-	header, expHeaderVal string
+	dcosConfig           dcosutil.DCOSConfig
 	userAgent            string
+	header, expHeaderVal string
 	expClientErr         error
 }
 
@@ -627,10 +628,8 @@ var (
 			expHeaderVal: "telegraf-mesos",
 		},
 		{
-			fixture: "Configured user-agent header",
-			dcosConfig: DCOSConfig{
-				UserAgent: "configured-telegraf-mesos",
-			},
+			fixture:      "Configured user-agent header",
+			userAgent:    "configured-telegraf-mesos",
 			header:       "User-Agent",
 			expHeaderVal: "configured-telegraf-mesos",
 		},
@@ -644,7 +643,7 @@ var (
 		},
 		{
 			fixture: "TLS CACert",
-			dcosConfig: DCOSConfig{
+			dcosConfig: dcosutil.DCOSConfig{
 				CACertificatePath: pki.CACertPath(),
 			},
 		},
@@ -655,14 +654,14 @@ var (
 				TLSCert: pki.ClientCertPath(),
 				TLSKey:  pki.ClientKeyPath(),
 			},
-			dcosConfig: DCOSConfig{
+			dcosConfig: dcosutil.DCOSConfig{
 				CACertificatePath: pki.CACertPath(),
 			},
 			expClientErr: errors.New("received both TLS and IAM configs but only expected one"),
 		},
 		{
 			fixture: "[IAM] Auth token header",
-			dcosConfig: DCOSConfig{
+			dcosConfig: dcosutil.DCOSConfig{
 				CACertificatePath: pki.CACertPath(),
 				IAMConfigPath:     tmpServiceAcctFile,
 			},
@@ -671,7 +670,7 @@ var (
 		},
 		{
 			fixture: "[IAM] Default user-agent header",
-			dcosConfig: DCOSConfig{
+			dcosConfig: dcosutil.DCOSConfig{
 				CACertificatePath: pki.CACertPath(),
 				IAMConfigPath:     tmpServiceAcctFile,
 			},
@@ -680,11 +679,11 @@ var (
 		},
 		{
 			fixture: "[IAM] Configured user-agent header",
-			dcosConfig: DCOSConfig{
+			dcosConfig: dcosutil.DCOSConfig{
 				CACertificatePath: pki.CACertPath(),
 				IAMConfigPath:     tmpServiceAcctFile,
-				UserAgent:         "configured-telegraf-mesos",
 			},
+			userAgent:    "configured-telegraf-mesos",
 			header:       "User-Agent",
 			expHeaderVal: "configured-telegraf-mesos",
 		},
@@ -709,6 +708,7 @@ func TestCreateHTTPClient(t *testing.T) {
 			m := Mesos{
 				ClientConfig: tc.tlsConfig,
 				DCOSConfig:   tc.dcosConfig,
+				UserAgent:    tc.userAgent,
 			}
 			client, err := m.createHttpClient()
 			require.Equal(tc.expClientErr, err)

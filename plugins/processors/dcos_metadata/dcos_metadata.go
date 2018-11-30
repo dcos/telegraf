@@ -12,10 +12,9 @@ import (
 	"time"
 
 	"github.com/influxdata/telegraf"
+	"github.com/influxdata/telegraf/dcosutil"
 	"github.com/influxdata/telegraf/internal"
 	"github.com/influxdata/telegraf/plugins/processors"
-
-	"github.com/dcos/dcos-go/dcos/http/transport"
 
 	"github.com/mesos/mesos-go/api/v1/lib"
 	"github.com/mesos/mesos-go/api/v1/lib/agent"
@@ -28,14 +27,13 @@ type DCOSMetadata struct {
 	MesosAgentUrl              string
 	Timeout                    internal.Duration
 	RateLimit                  internal.Duration
-	CaCertificatePath          string
-	IamConfigPath              string
 	Whitelist, WhitelistPrefix []string
 	UserAgent                  string
 	containers                 map[string]containerInfo
 	mu                         sync.Mutex
 	once                       Once
 	client                     *httpcli.Client
+	dcosutil.DCOSConfig
 }
 
 // containerInfo is a tuple of metadata which we use to map a container ID to
@@ -229,21 +227,7 @@ func (dm *DCOSMetadata) cache(gs *agent.Response_GetState,
 	return nil
 }
 
-type roundTripper struct {
-	r         http.RoundTripper
-	userAgent string
-}
-
 var defaultUserAgent = "telegraf-dcos-metadata"
-
-// RoundTrip is an implementation of the RoundTripper interface.
-func (rt roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	req.Header.Set("User-Agent", defaultUserAgent)
-	if rt.userAgent != "" {
-		req.Header.Set("User-Agent", rt.userAgent)
-	}
-	return rt.r.RoundTrip(req)
-}
 
 // getClient returns an httpcli client configured with the available levels of
 // TLS and IAM according to flags set in the config
@@ -251,6 +235,7 @@ func (dm *DCOSMetadata) getClient() (*httpcli.Client, error) {
 	if dm.client != nil {
 		return dm.client, nil
 	}
+
 	uri := dm.MesosAgentUrl + "/api/v1"
 	userAgent := defaultUserAgent
 	if dm.UserAgent != "" {
@@ -260,27 +245,18 @@ func (dm *DCOSMetadata) getClient() (*httpcli.Client, error) {
 	cfgOpts := []httpcli.ConfigOpt{}
 	opts := []httpcli.Opt{}
 
-	var tr *http.Transport
 	var rt http.RoundTripper
 	var err error
 
-	if dm.CaCertificatePath != "" {
-		if tr, err = getTransport(dm.CaCertificatePath); err != nil {
-			return client, err
+	if dm.CACertificatePath != "" {
+		if rt, err = dm.DCOSConfig.Transport(userAgent); err != nil {
+			return nil, fmt.Errorf("error creating transport: %s", err)
+		}
+		if dm.IAMConfigPath != "" {
+			cfgOpts = append(cfgOpts, httpcli.RoundTripper(rt))
 		}
 	}
 
-	if dm.IamConfigPath != "" {
-		rt, err = transport.NewRoundTripper(
-			tr,
-			transport.OptionReadIAMConfig(dm.IamConfigPath),
-			transport.OptionUserAgent(userAgent),
-		)
-		if err != nil {
-			return client, err
-		}
-		cfgOpts = append(cfgOpts, httpcli.RoundTripper(rt))
-	}
 	opts = append(opts, httpcli.Do(httpcli.With(cfgOpts...)))
 	client.With(opts...)
 

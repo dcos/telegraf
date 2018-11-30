@@ -1,4 +1,4 @@
-package mesos
+package dcosutil
 
 import (
 	"crypto/tls"
@@ -15,32 +15,21 @@ import (
 type DCOSConfig struct {
 	CACertificatePath string `toml:"ca_certificate_path"`
 	IAMConfigPath     string `toml:"iam_config_path"`
-	UserAgent         string `toml:"user_agent"`
 }
 
-// transport returns a transport implementing http.RoundTripper
-func (c *DCOSConfig) transport() (http.RoundTripper, error) {
+// Transport returns a transport implementing http.RoundTripper
+func (c *DCOSConfig) Transport(userAgent string) (http.RoundTripper, error) {
 	tr, err := getTransport(c.CACertificatePath)
 	if err != nil {
 		return nil, err
 	}
 
 	if c.IAMConfigPath != "" {
-		var rt http.RoundTripper
-		var err error
-		if c.UserAgent != "" {
-			rt, err = transport.NewRoundTripper(
-				tr,
-				transport.OptionReadIAMConfig(c.IAMConfigPath),
-				transport.OptionUserAgent(c.UserAgent),
-			)
-		} else {
-			rt, err = transport.NewRoundTripper(
-				tr,
-				transport.OptionReadIAMConfig(c.IAMConfigPath),
-				transport.OptionUserAgent(defaultUserAgent),
-			)
-		}
+		rt, err := transport.NewRoundTripper(
+			tr,
+			transport.OptionReadIAMConfig(c.IAMConfigPath),
+			transport.OptionUserAgent(userAgent),
+		)
 		if err != nil {
 			return nil, err
 		}

@@ -10,10 +10,9 @@ import (
 	"time"
 
 	"github.com/influxdata/telegraf"
+	"github.com/influxdata/telegraf/dcosutil"
 	"github.com/influxdata/telegraf/internal"
 	"github.com/influxdata/telegraf/plugins/inputs"
-
-	"github.com/dcos/dcos-go/dcos/http/transport"
 
 	"github.com/mesos/mesos-go/api/v1/lib"
 	"github.com/mesos/mesos-go/api/v1/lib/agent"
@@ -36,12 +35,11 @@ const sampleConfig = `
 
 // DCOSContainers describes the options available to this plugin
 type DCOSContainers struct {
-	MesosAgentUrl     string
-	Timeout           internal.Duration
-	CaCertificatePath string
-	IamConfigPath     string
-	UserAgent         string
-	client            *httpcli.Client
+	MesosAgentUrl string
+	Timeout       internal.Duration
+	UserAgent     string
+	client        *httpcli.Client
+	dcosutil.DCOSConfig
 }
 
 // measurement is a combination of fields and tags specific to those fields
@@ -136,21 +134,7 @@ func (dc *DCOSContainers) getContainers(ctx context.Context, cli calls.Sender) (
 	return gc, nil
 }
 
-type roundTripper struct {
-	r         http.RoundTripper
-	userAgent string
-}
-
 var defaultUserAgent = "telegraf-dcos-containers"
-
-// RoundTrip is an implementation of the RoundTripper interface.
-func (rt roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	req.Header.Set("User-Agent", defaultUserAgent)
-	if rt.userAgent != "" {
-		req.Header.Set("User-Agent", rt.userAgent)
-	}
-	return rt.r.RoundTrip(req)
-}
 
 // getClient returns an httpcli client configured with the available levels of
 // TLS and IAM according to flags set in the config
@@ -168,26 +152,17 @@ func (dc *DCOSContainers) getClient() (*httpcli.Client, error) {
 	cfgOpts := []httpcli.ConfigOpt{}
 	opts := []httpcli.Opt{}
 
-	var tr *http.Transport
 	var rt http.RoundTripper
 	var err error
 
-	if dc.CaCertificatePath != "" {
-		if tr, err = getTransport(dc.CaCertificatePath); err != nil {
-			return client, err
+	if dc.CACertificatePath != "" {
+		if rt, err = dc.DCOSConfig.Transport(userAgent); err != nil {
+			return nil, fmt.Errorf("error creating transport: %s", err)
 		}
-	}
 
-	if dc.IamConfigPath != "" {
-		rt, err = transport.NewRoundTripper(
-			tr,
-			transport.OptionReadIAMConfig(dc.IamConfigPath),
-			transport.OptionUserAgent(userAgent),
-		)
-		if err != nil {
-			return client, err
+		if dc.IAMConfigPath != "" {
+			cfgOpts = append(cfgOpts, httpcli.RoundTripper(rt))
 		}
-		cfgOpts = append(cfgOpts, httpcli.RoundTripper(rt))
 	}
 	opts = append(opts, httpcli.Do(httpcli.With(cfgOpts...)))
 	client.With(opts...)
