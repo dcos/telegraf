@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strconv"
 	"sync"
 	"time"
 
@@ -363,8 +364,69 @@ func processResponse(resp mesos.Response, t agent.Response_Type) (agent.Response
 // URLs to scrape
 func getMesosTaskPrometheusURLs(tasks *agent.Response_GetTasks) []*url.URL {
 	results := []*url.URL{}
+	for _, t := range tasks.GetLaunchedTasks() {
+		for _, p := range getPromPortsForTask(&t) {
+			rURL, _ := url.Parse(fmt.Sprintf("http://localhost:%d/metrics", p))
+			results = append(results, rURL)
+		}
+	}
 	return results
 }
+
+// parseTask retrieves a list of ports which host a Prometheus metrics endpoint
+// exposed by a given task.
+func getPromPortsForTask(t *mesos.Task) []uint32 {
+	promPorts := []uint32{}
+
+	// loop over the task's ports, adding them if they are appropriately labelled
+	taskPorts := getPortsFromTask(t)
+	for _, p := range taskPorts {
+		for k, v := range simplifyLabels(p.GetLabels()) {
+			if k == "DCOS_METRICS_FORMAT" && v == "prometheus" {
+				promPorts = append(promPorts, p.Number)
+			}
+		}
+	}
+
+	// cross-reference the task's DCOS_METRICS_PORT_INDEX label, if present
+	taskLabels := simplifyLabels(t.GetLabels())
+	if taskLabels["DCOS_METRICS_FORMAT"] != "prometheus" {
+		return promPorts
+	}
+	index, err := strconv.Atoi(taskLabels["DCOS_METRICS_PORT_INDEX"])
+	if err != nil {
+		log.Printf("E! Could not retrieve port index for %s: %s", t.GetTaskID(), err)
+		return promPorts
+	}
+	if index < 0 || index >= len(taskPorts) {
+		log.Printf("E! Could not retrieve port index %d for task %s", index, t.GetTaskID())
+		return promPorts
+	}
+	promPorts = append(promPorts, taskPorts[index].Number)
+	return promPorts
+}
+
+// getPortsFromTask is a convenience method to retrieve a task's ports
+func getPortsFromTask(t *mesos.Task) []mesos.Port {
+	if d := t.GetDiscovery(); d != nil {
+		if pp := d.GetPorts(); pp != nil {
+			return pp.Ports
+		}
+	}
+	return []mesos.Port{}
+}
+
+// simplifyLabels converts a Labels object to a hashmap
+func simplifyLabels(ll *mesos.Labels) map[string]string {
+	results := map[string]string{}
+	if ll != nil {
+		for _, l := range ll.Labels {
+			results[l.GetKey()] = l.GetValue()
+		}
+	}
+	return results
+}
+
 func init() {
 	inputs.Add("prometheus", func() telegraf.Input {
 		return &Prometheus{
