@@ -129,6 +129,7 @@ func (p *Prometheus) GetAllURLs() ([]URLAndAddress, error) {
 
 		allURLs = append(allURLs, URLAndAddress{URL: URL, OriginalURL: URL})
 	}
+	// Kubernetes service discovery
 	for _, service := range p.KubernetesServices {
 		URL, err := url.Parse(service)
 		if err != nil {
@@ -142,6 +143,28 @@ func (p *Prometheus) GetAllURLs() ([]URLAndAddress, error) {
 		for _, resolved := range resolvedAddresses {
 			serviceURL := p.AddressToURL(URL, resolved)
 			allURLs = append(allURLs, URLAndAddress{URL: serviceURL, Address: resolved, OriginalURL: URL})
+		}
+	}
+	// Mesos service discovery
+	if p.MesosAgentUrl != "" {
+		client, err := p.getMesosClient()
+		if err != nil {
+			log.Printf("E! %s", err)
+			return allURLs, err
+		}
+
+		cli := httpagent.NewSender(client.Send)
+		ctx, cancel := context.WithTimeout(context.Background(), p.MesosTimeout.Duration)
+		defer cancel()
+
+		tasks, err := p.getTasks(ctx, cli)
+		if err != nil {
+			log.Printf("E! %s", err)
+			return allURLs, err
+		}
+
+		for _, url := range getMesosTaskPrometheusURLs(tasks) {
+			allURLs = append(allURLs, URLAndAddress{URL: url, OriginalURL: url})
 		}
 	}
 	return allURLs, nil
@@ -263,6 +286,37 @@ func (p *Prometheus) gatherURL(u URLAndAddress, acc telegraf.Accumulator) error 
 	return nil
 }
 
+// getMesosClient returns an httpcli client configured with the available levels of
+// TLS and IAM according to flags set in the config
+func (p *Prometheus) getMesosClient() (*httpcli.Client, error) {
+	if p.mesosClient != nil {
+		return p.mesosClient, nil
+	}
+
+	uri := p.MesosAgentUrl + "/api/v1"
+	client := httpcli.New(httpcli.Endpoint(uri), httpcli.DefaultHeader("User-Agent",
+		dcosutil.GetUserAgent(p.UserAgent)))
+	cfgOpts := []httpcli.ConfigOpt{}
+	opts := []httpcli.Opt{}
+
+	var rt http.RoundTripper
+	var err error
+
+	if p.CACertificatePath != "" {
+		if rt, err = p.DCOSConfig.Transport(); err != nil {
+			return nil, fmt.Errorf("error creating transport: %s", err)
+		}
+		if p.IAMConfigPath != "" {
+			cfgOpts = append(cfgOpts, httpcli.RoundTripper(rt))
+		}
+	}
+	opts = append(opts, httpcli.Do(httpcli.With(cfgOpts...)))
+	client.With(opts...)
+
+	p.mesosClient = client
+	return client, nil
+}
+
 // getTasks requests tasks from the operator API
 func (p *Prometheus) getTasks(ctx context.Context, cli calls.Sender) (*agent.Response_GetTasks, error) {
 	resp, err := cli.Send(ctx, calls.NonStreaming(calls.GetTasks()))
@@ -305,6 +359,12 @@ func processResponse(resp mesos.Response, t agent.Response_Type) (agent.Response
 	}
 }
 
+// getMesosTaskPrometheusURLs converts a list of tasks to a list of Prometheus
+// URLs to scrape
+func getMesosTaskPrometheusURLs(tasks *agent.Response_GetTasks) []*url.URL {
+	results := []*url.URL{}
+	return results
+}
 func init() {
 	inputs.Add("prometheus", func() telegraf.Input {
 		return &Prometheus{
