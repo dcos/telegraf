@@ -20,6 +20,7 @@ import (
 )
 
 // raw protobuf request types:
+// ref https://github.com/apache/mesos/blob/master/include/mesos/v1/agent/agent.proto
 var (
 	GET_CONTAINERS = []byte{8, 10}
 	GET_STATE      = []byte{8, 9}
