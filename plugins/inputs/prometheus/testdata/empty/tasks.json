@@ -1,0 +1,6 @@
+{
+  "type": "GET_TASKS",
+  "get_tasks": {
+    "launched_tasks": []
+  }
+}
