@@ -1,8 +1,10 @@
 package prometheus
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net"
@@ -12,9 +14,16 @@ import (
 	"time"
 
 	"github.com/influxdata/telegraf"
+	"github.com/influxdata/telegraf/dcosutil"
 	"github.com/influxdata/telegraf/internal"
 	"github.com/influxdata/telegraf/internal/tls"
 	"github.com/influxdata/telegraf/plugins/inputs"
+
+	"github.com/mesos/mesos-go/api/v1/lib"
+	"github.com/mesos/mesos-go/api/v1/lib/agent"
+	"github.com/mesos/mesos-go/api/v1/lib/agent/calls"
+	"github.com/mesos/mesos-go/api/v1/lib/httpcli"
+	"github.com/mesos/mesos-go/api/v1/lib/httpcli/httpagent"
 )
 
 const acceptHeader = `application/vnd.google.protobuf;proto=io.prometheus.client.MetricFamily;encoding=delimited;q=0.7,text/plain;version=0.0.4;q=0.3`
@@ -26,6 +35,11 @@ type Prometheus struct {
 	// An array of Kubernetes services to scrape metrics from.
 	KubernetesServices []string
 
+	// The URL of the local mesos agent
+	MesosAgentUrl string
+	MesosTimeout  internal.Duration
+	dcosutil.DCOSConfig
+
 	// Bearer Token authorization file path
 	BearerToken string `toml:"bearer_token"`
 
@@ -33,7 +47,8 @@ type Prometheus struct {
 
 	tls.ClientConfig
 
-	client *http.Client
+	client      *http.Client
+	mesosClient *httpcli.Client
 }
 
 var sampleConfig = `
@@ -42,6 +57,17 @@ var sampleConfig = `
 
   ## An array of Kubernetes services to scrape metrics from.
   # kubernetes_services = ["http://my-service-dns.my-namespace:9100/metrics"]
+
+  ## The URL of the local mesos agent
+  mesos_agent_url = "http://$NODE_PRIVATE_IP:5051"
+	## The period after which requests to mesos agent should time out
+	mesos_timeout = "10s"
+
+  ## The user agent to send with requests
+  user_agent = "telegraf-prometheus"
+  ## Optional IAM configuration
+  # ca_certificate_path = "/run/dcos/pki/CA/ca-bundle.crt"
+  # iam_config_path = "/run/dcos/etc/dcos-telegraf/service_account.json"
 
   ## Use bearer token for authorization
   # bearer_token = /path/to/bearer/token
@@ -237,8 +263,53 @@ func (p *Prometheus) gatherURL(u URLAndAddress, acc telegraf.Accumulator) error 
 	return nil
 }
 
+// getTasks requests tasks from the operator API
+func (p *Prometheus) getTasks(ctx context.Context, cli calls.Sender) (*agent.Response_GetTasks, error) {
+	resp, err := cli.Send(ctx, calls.NonStreaming(calls.GetTasks()))
+	if err != nil {
+		return nil, err
+	}
+	r, err := processResponse(resp, agent.Response_GET_TASKS)
+	if err != nil {
+		return nil, err
+	}
+
+	gs := r.GetGetTasks()
+	if gs == nil {
+		return nil, errors.New("the getTasks response from the mesos agent was empty")
+	}
+	return gs, nil
+}
+
+// processResponse reads the response from a triggered request, verifies its
+// type, and returns an agent response
+func processResponse(resp mesos.Response, t agent.Response_Type) (agent.Response, error) {
+	var r agent.Response
+	defer func() {
+		if resp != nil {
+			resp.Close()
+		}
+	}()
+	for {
+		if err := resp.Decode(&r); err != nil {
+			if err == io.EOF {
+				break
+			}
+			return r, err
+		}
+	}
+	if r.GetType() == t {
+		return r, nil
+	} else {
+		return r, fmt.Errorf("processResponse expected type %q, got %q", t, r.GetType())
+	}
+}
+
 func init() {
 	inputs.Add("prometheus", func() telegraf.Input {
-		return &Prometheus{ResponseTimeout: internal.Duration{Duration: time.Second * 3}}
+		return &Prometheus{
+			ResponseTimeout: internal.Duration{Duration: time.Second * 3},
+			MesosTimeout:    internal.Duration{Duration: time.Second * 10},
+		}
 	})
 }
