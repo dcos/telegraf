@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/influxdata/telegraf/internal"
 	"github.com/influxdata/telegraf/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -102,4 +103,33 @@ func TestPrometheusGeneratesMetricsAlthoughFirstDNSFails(t *testing.T) {
 	assert.True(t, acc.HasFloatField("go_goroutines", "gauge"))
 	assert.True(t, acc.HasFloatField("test_metric", "value"))
 	assert.True(t, acc.HasTimestamp("test_metric", time.Unix(1490802350, 0)))
+}
+
+func TestPrometheusGathersMesosMetrics(t *testing.T) {
+	sampleUrl, _ := url.Parse("http://localhost:12345/metrics")
+	testCases := map[string][]URLAndAddress{
+		"empty": []URLAndAddress{},
+		"portlabel": []URLAndAddress{
+			URLAndAddress{URL: sampleUrl, OriginalURL: sampleUrl},
+		},
+		"tasklabel": []URLAndAddress{
+			URLAndAddress{URL: sampleUrl, OriginalURL: sampleUrl},
+		},
+	}
+	for scenario, expected := range testCases {
+		t.Run(scenario, func(t *testing.T) {
+			server := startTestServer(t, scenario)
+			defer server.Close()
+
+			p := &Prometheus{
+				MesosTimeout:  internal.Duration{Duration: 100 * time.Millisecond},
+				MesosAgentUrl: server.URL,
+			}
+
+			urls, err := p.GetAllURLs()
+			assert.Nil(t, err)
+			assert.Equal(t, expected, urls)
+
+		})
+	}
 }
