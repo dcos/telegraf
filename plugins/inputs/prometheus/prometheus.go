@@ -164,8 +164,13 @@ func (p *Prometheus) GetAllURLs() ([]URLAndAddress, error) {
 			return allURLs, err
 		}
 
-		for _, url := range getMesosTaskPrometheusURLs(tasks) {
-			allURLs = append(allURLs, URLAndAddress{URL: url, OriginalURL: url})
+		for _, service := range getMesosTaskPrometheusURLs(tasks) {
+			URL, err := url.Parse(service)
+			if err != nil {
+				log.Printf("E! %s", err)
+				continue
+			}
+			allURLs = append(allURLs, URLAndAddress{URL: URL, OriginalURL: URL})
 		}
 	}
 	return allURLs, nil
@@ -362,48 +367,61 @@ func processResponse(resp mesos.Response, t agent.Response_Type) (agent.Response
 
 // getMesosTaskPrometheusURLs converts a list of tasks to a list of Prometheus
 // URLs to scrape
-func getMesosTaskPrometheusURLs(tasks *agent.Response_GetTasks) []*url.URL {
-	results := []*url.URL{}
+func getMesosTaskPrometheusURLs(tasks *agent.Response_GetTasks) []string {
+	results := []string{}
 	for _, t := range tasks.GetLaunchedTasks() {
-		for _, p := range getPromPortsForTask(&t) {
-			rURL, _ := url.Parse(fmt.Sprintf("http://localhost:%d/metrics", p))
-			results = append(results, rURL)
+		for _, endpoint := range getEndpointsFromTaskPorts(&t) {
+			results = append(results, endpoint)
+		}
+		if endpoint, ok := getEndpointFromTaskLabels(&t); ok {
+			results = append(results, endpoint)
 		}
 	}
 	return results
 }
 
-// parseTask retrieves a list of ports which host a Prometheus metrics endpoint
-// exposed by a given task.
-func getPromPortsForTask(t *mesos.Task) []uint32 {
-	promPorts := []uint32{}
+// getEndpointsFromTaskPorts retrieves a map of ports end enpoints from which
+// Prometheus metrics can be retrieved from a given task.
+func getEndpointsFromTaskPorts(t *mesos.Task) []string {
+	endpoints := []string{}
 
 	// loop over the task's ports, adding them if they are appropriately labelled
 	taskPorts := getPortsFromTask(t)
 	for _, p := range taskPorts {
-		for k, v := range simplifyLabels(p.GetLabels()) {
-			if k == "DCOS_METRICS_FORMAT" && v == "prometheus" {
-				promPorts = append(promPorts, p.Number)
+		portLabels := simplifyLabels(p.GetLabels())
+		if portLabels["DCOS_METRICS_FORMAT"] == "prometheus" {
+			route := "/metrics"
+			if ep := portLabels["DCOS_METRICS_ENDPOINT"]; ep != "" {
+				route = ep
 			}
+			endpoints = append(endpoints, fmt.Sprintf("http://localhost:%d%s", p.Number, route))
 		}
 	}
+	return endpoints
+}
 
-	// cross-reference the task's DCOS_METRICS_PORT_INDEX label, if present
+// getEndpointFromTaskLabels cross-references the task's DCOS_METRICS_PORT_INDEX
+// label, if present, with its ports to yield an endpoint.
+func getEndpointFromTaskLabels(t *mesos.Task) (string, bool) {
+	taskPorts := getPortsFromTask(t)
 	taskLabels := simplifyLabels(t.GetLabels())
 	if taskLabels["DCOS_METRICS_FORMAT"] != "prometheus" {
-		return promPorts
+		return "", false
 	}
 	index, err := strconv.Atoi(taskLabels["DCOS_METRICS_PORT_INDEX"])
 	if err != nil {
 		log.Printf("E! Could not retrieve port index for %s: %s", t.GetTaskID(), err)
-		return promPorts
+		return "", false
 	}
 	if index < 0 || index >= len(taskPorts) {
 		log.Printf("E! Could not retrieve port index %d for task %s", index, t.GetTaskID())
-		return promPorts
+		return "", false
 	}
-	promPorts = append(promPorts, taskPorts[index].Number)
-	return promPorts
+	route := "/metrics"
+	if ep := taskLabels["DCOS_METRICS_ENDPOINT"]; ep != "" {
+		route = ep
+	}
+	return fmt.Sprintf("http://localhost:%d%s", taskPorts[index].Number, route), true
 }
 
 // getPortsFromTask is a convenience method to retrieve a task's ports
