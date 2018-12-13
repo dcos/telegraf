@@ -33,7 +33,7 @@ The location of the configuration file can be set via the `--config` command
 line flag.
 
 When the `--config-directory` command line flag is used files ending with
-`.conf` in the specified directory will also be included in the Telegraf
+`.conf` in the specified directory/directories will also be included in the Telegraf
 configuration.
 
 On most systems, the default locations are `/etc/telegraf/telegraf.conf` for

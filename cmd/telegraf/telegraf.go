@@ -34,7 +34,7 @@ var fQuiet = flag.Bool("quiet", false,
 var fTest = flag.Bool("test", false, "gather metrics, print them out, and exit")
 var fConfig = flag.String("config", "", "configuration file to load")
 var fConfigDirectory = flag.String("config-directory", "",
-	"directory containing additional *.conf files")
+	"directories (comma-delimited) containing additional *.conf files")
 var fVersion = flag.Bool("version", false, "display the version")
 var fSampleConfig = flag.Bool("sample-config", false,
 	"print out full sample configuration")
@@ -98,9 +98,10 @@ func reloadLoop(
 		}
 
 		if *fConfigDirectory != "" {
-			err = c.LoadDirectory(*fConfigDirectory)
-			if err != nil {
-				log.Fatal("E! " + err.Error())
+			for _, dir := range strings.Split(*fConfigDirectory, ",") {
+				if err := c.LoadDirectory(dir); err != nil {
+					log.Fatal("E! " + err.Error())
+				}
 			}
 		}
 		if !*fTest && len(c.Outputs) == 0 {
