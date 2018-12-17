@@ -108,14 +108,14 @@ func TestPrometheusGeneratesMetricsAlthoughFirstDNSFails(t *testing.T) {
 func TestPrometheusGathersMesosMetrics(t *testing.T) {
 	metricsUrl, _ := url.Parse("http://localhost:12345/metrics")
 	federateUrl, _ := url.Parse("http://localhost:12345/federate")
-	testCases := map[string][]URLAndAddress{
-		"empty": []URLAndAddress{},
-		"portlabel": []URLAndAddress{
-			URLAndAddress{URL: metricsUrl, OriginalURL: metricsUrl},
-			URLAndAddress{URL: federateUrl, OriginalURL: federateUrl},
+	testCases := map[string][]URLAndTags{
+		"empty": []URLAndTags{},
+		"portlabel": []URLAndTags{
+			URLAndTags{URL: metricsUrl, OriginalURL: metricsUrl},
+			URLAndTags{URL: federateUrl, OriginalURL: federateUrl},
 		},
-		"tasklabel": []URLAndAddress{
-			URLAndAddress{URL: metricsUrl, OriginalURL: metricsUrl},
+		"tasklabel": []URLAndTags{
+			URLAndTags{URL: metricsUrl, OriginalURL: metricsUrl},
 		},
 	}
 	for scenario, expected := range testCases {

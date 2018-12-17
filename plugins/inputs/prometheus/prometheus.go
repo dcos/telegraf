@@ -113,14 +113,17 @@ func (p *Prometheus) AddressToURL(u *url.URL, address string) *url.URL {
 	return reconstructedURL
 }
 
-type URLAndAddress struct {
+type URLAndTags struct {
+	URL *url.URL
+	// OriginalURL will be sanitized (stripped of username and password)
+	// and added to metrics from this URL as 'url'
 	OriginalURL *url.URL
-	URL         *url.URL
-	Address     string
+	// All members of tags will be added directly to each metric from this URL
+	Tags map[string]string
 }
 
-func (p *Prometheus) GetAllURLs() ([]URLAndAddress, error) {
-	allURLs := make([]URLAndAddress, 0)
+func (p *Prometheus) GetAllURLs() ([]URLAndTags, error) {
+	allURLs := make([]URLAndTags, 0)
 	for _, u := range p.URLs {
 		URL, err := url.Parse(u)
 		if err != nil {
@@ -128,7 +131,7 @@ func (p *Prometheus) GetAllURLs() ([]URLAndAddress, error) {
 			continue
 		}
 
-		allURLs = append(allURLs, URLAndAddress{URL: URL, OriginalURL: URL})
+		allURLs = append(allURLs, URLAndTags{URL: URL, OriginalURL: URL})
 	}
 	// Kubernetes service discovery
 	for _, service := range p.KubernetesServices {
@@ -143,7 +146,7 @@ func (p *Prometheus) GetAllURLs() ([]URLAndAddress, error) {
 		}
 		for _, resolved := range resolvedAddresses {
 			serviceURL := p.AddressToURL(URL, resolved)
-			allURLs = append(allURLs, URLAndAddress{URL: serviceURL, Address: resolved, OriginalURL: URL})
+			allURLs = append(allURLs, URLAndTags{URL: serviceURL, Tags: map[string]string{"address": resolved}, OriginalURL: URL})
 		}
 	}
 	// Mesos service discovery
@@ -170,7 +173,7 @@ func (p *Prometheus) GetAllURLs() ([]URLAndAddress, error) {
 				log.Printf("E! %s", err)
 				continue
 			}
-			allURLs = append(allURLs, URLAndAddress{URL: URL, OriginalURL: URL})
+			allURLs = append(allURLs, URLAndTags{URL: URL, OriginalURL: URL})
 		}
 	}
 	return allURLs, nil
@@ -195,7 +198,7 @@ func (p *Prometheus) Gather(acc telegraf.Accumulator) error {
 	}
 	for _, URL := range allURLs {
 		wg.Add(1)
-		go func(serviceURL URLAndAddress) {
+		go func(serviceURL URLAndTags) {
 			defer wg.Done()
 			acc.AddError(p.gatherURL(serviceURL, acc))
 		}(URL)
@@ -232,7 +235,7 @@ func (p *Prometheus) createHttpClient() (*http.Client, error) {
 	return client, nil
 }
 
-func (p *Prometheus) gatherURL(u URLAndAddress, acc telegraf.Accumulator) error {
+func (p *Prometheus) gatherURL(u URLAndTags, acc telegraf.Accumulator) error {
 	var req, err = http.NewRequest("GET", u.URL.String(), nil)
 	req.Header.Add("Accept", acceptHeader)
 	var token []byte
@@ -271,8 +274,9 @@ func (p *Prometheus) gatherURL(u URLAndAddress, acc telegraf.Accumulator) error 
 		// strip user and password from URL
 		u.OriginalURL.User = nil
 		tags["url"] = u.OriginalURL.String()
-		if u.Address != "" {
-			tags["address"] = u.Address
+
+		for k, v := range u.Tags {
+			tags[k] = v
 		}
 
 		switch metric.Type() {
