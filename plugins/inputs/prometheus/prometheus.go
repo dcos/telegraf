@@ -438,6 +438,27 @@ func getPortsFromTask(t *mesos.Task) []mesos.Port {
 	return []mesos.Port{}
 }
 
+// getContainerIDs retrieves the container ID and the parent container ID of a
+// task from its TaskStatus. The container ID corresponds to the task's
+// container, the parent container ID corresponds to the task's executor's
+// container.
+func getContainerIDs(statuses []mesos.TaskStatus) (containerID string, parentContainerID string) {
+	// Container ID is held in task status
+	for _, s := range statuses {
+		if cs := s.GetContainerStatus(); cs != nil {
+			if cid := cs.GetContainerID(); cid != nil {
+				containerID = cid.GetValue()
+				if pcid := cid.GetParent(); pcid != nil {
+					parentContainerID = pcid.GetValue()
+					return
+				}
+				return
+			}
+		}
+	}
+	return
+}
+
 // simplifyLabels converts a Labels object to a hashmap
 func simplifyLabels(ll *mesos.Labels) map[string]string {
 	results := map[string]string{}
