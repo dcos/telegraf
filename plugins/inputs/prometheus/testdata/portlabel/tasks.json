@@ -178,7 +178,7 @@
             "healthy": true,
             "container_status": {
               "container_id": {
-                "value": "6c9624d4-c98a-48cd-8c69-fd4994058d95"
+                "value": "abc-123"
               },
               "network_infos": [
                 {
@@ -314,7 +314,7 @@
             "healthy": true,
             "container_status": {
               "container_id": {
-                "value": "6c9624d4-c98a-48cd-8c69-fd4994058d95"
+                "value": "xyz-123"
               },
               "network_infos": [
                 {
