@@ -167,14 +167,7 @@ func (p *Prometheus) GetAllURLs() ([]URLAndTags, error) {
 			return allURLs, err
 		}
 
-		for _, service := range getMesosTaskPrometheusURLs(tasks) {
-			URL, err := url.Parse(service)
-			if err != nil {
-				log.Printf("E! %s", err)
-				continue
-			}
-			allURLs = append(allURLs, URLAndTags{URL: URL, OriginalURL: URL})
-		}
+		allURLs = append(allURLs, getMesosTaskPrometheusURLs(tasks)...)
 	}
 	return allURLs, nil
 }
@@ -371,17 +364,37 @@ func processResponse(resp mesos.Response, t agent.Response_Type) (agent.Response
 
 // getMesosTaskPrometheusURLs converts a list of tasks to a list of Prometheus
 // URLs to scrape
-func getMesosTaskPrometheusURLs(tasks *agent.Response_GetTasks) []string {
-	results := []string{}
+func getMesosTaskPrometheusURLs(tasks *agent.Response_GetTasks) []URLAndTags {
+	results := []URLAndTags{}
 	for _, t := range tasks.GetLaunchedTasks() {
 		for _, endpoint := range getEndpointsFromTaskPorts(&t) {
-			results = append(results, endpoint)
+			uat, err := makeURLAndTags(t, endpoint)
+			if err != nil {
+				log.Printf("E! %s", err)
+				continue
+			}
+			results = append(results, uat)
 		}
 		if endpoint, ok := getEndpointFromTaskLabels(&t); ok {
-			results = append(results, endpoint)
+			uat, err := makeURLAndTags(t, endpoint)
+			if err != nil {
+				log.Printf("E! %s", err)
+				continue
+			}
+			results = append(results, uat)
 		}
 	}
 	return results
+}
+
+func makeURLAndTags(task mesos.Task, endpoint string) (URLAndTags, error) {
+	URL, err := url.Parse(endpoint)
+	cid, _ := getContainerIDs(task.GetStatuses())
+	return URLAndTags{
+		URL:         URL,
+		OriginalURL: URL,
+		Tags:        map[string]string{"container_id": cid},
+	}, err
 }
 
 // getEndpointsFromTaskPorts retrieves a map of ports end enpoints from which
