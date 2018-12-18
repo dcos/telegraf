@@ -111,11 +111,23 @@ func TestPrometheusGathersMesosMetrics(t *testing.T) {
 	testCases := map[string][]URLAndTags{
 		"empty": []URLAndTags{},
 		"portlabel": []URLAndTags{
-			URLAndTags{URL: metricsUrl, OriginalURL: metricsUrl},
-			URLAndTags{URL: federateUrl, OriginalURL: federateUrl},
+			URLAndTags{
+				URL:         metricsUrl,
+				OriginalURL: metricsUrl,
+				Tags:        map[string]string{"container_id": "abc-123"},
+			},
+			URLAndTags{
+				URL:         federateUrl,
+				OriginalURL: federateUrl,
+				Tags:        map[string]string{"container_id": "xyz-123"},
+			},
 		},
 		"tasklabel": []URLAndTags{
-			URLAndTags{URL: metricsUrl, OriginalURL: metricsUrl},
+			URLAndTags{
+				URL:         metricsUrl,
+				OriginalURL: metricsUrl,
+				Tags:        map[string]string{"container_id": "abc-123"},
+			},
 		},
 	}
 	for scenario, expected := range testCases {
