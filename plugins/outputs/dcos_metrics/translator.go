@@ -41,13 +41,17 @@ func (t *producerTranslator) Translate(metric telegraf.Metric) (msg producers.Me
 	// Container metrics
 	// We assume any metric with a container_id tag but without a metric_type tag is a container metric from the
 	// dcos_containers input.
-	case hasAllKeys(tags, []string{"container_id"}) && !hasAnyKeys(tags, []string{"metric_type"}):
+	case hasAllKeys(tags, []string{"container_id"}) && !hasAnyKeys(tags, []string{"metric_type", "url"}):
 		msg = t.containerMetricsMessage(metric)
 
 	// App metrics
 	// We assume any metric with both a container_id tag and a metric_type tag is an app metric from the dcos_statsd
 	// input.
 	case hasAllKeys(tags, []string{"container_id", "metric_type"}):
+		msg = t.appMetricsMessage(metric)
+
+	// We assume any metric with both a container_id tag and a url tag is an app metric from the prometheus input.
+	case hasAllKeys(tags, []string{"container_id", "url"}):
 		msg = t.appMetricsMessage(metric)
 
 	// Node metrics

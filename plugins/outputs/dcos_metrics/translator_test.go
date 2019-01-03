@@ -706,6 +706,52 @@ func TestTranslate(t *testing.T) {
 				},
 			},
 		},
+
+		// Custom metrics from tasks collected by the Prometheus input should appear as app metrics.
+		testCase{
+			name: "prom app metric",
+			input: metricParams{
+				name: "prefix.prom.foo",
+				tags: map[string]string{
+					"container_id": "cid",
+					"service_name": "sname",
+					"task_name":    "tname",
+					"url":          "http://example.com",
+					"label_name":   "label_value",
+				},
+				fields: map[string]interface{}{
+					"metric1": uint64(0),
+					"metric2": uint64(1),
+				},
+				tm: tm,
+				tp: telegraf.Untyped,
+			},
+			output: producers.MetricsMessage{
+				Name: "dcos.metrics.app",
+				Dimensions: producers.Dimensions{
+					MesosID:       translator.MesosID,
+					ClusterID:     translator.DCOSClusterID,
+					Hostname:      translator.DCOSNodePrivateIP,
+					ContainerID:   "cid",
+					FrameworkName: "sname",
+					TaskName:      "tname",
+				},
+				Datapoints: []producers.Datapoint{
+					producers.Datapoint{
+						Name:      "prefix.prom.foo.metric1",
+						Value:     uint64(0),
+						Timestamp: timestamp,
+						Tags:      map[string]string{"label_name": "label_value", "url": "http://example.com"},
+					},
+					producers.Datapoint{
+						Name:      "prefix.prom.foo.metric2",
+						Value:     uint64(1),
+						Timestamp: timestamp,
+						Tags:      map[string]string{"label_name": "label_value", "url": "http://example.com"},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
