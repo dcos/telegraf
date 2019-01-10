@@ -236,13 +236,72 @@ func cMeasurements(c agent.Response_GetContainers_Container) []measurement {
 	warnIfNotSet(setIfNotNil(disk.fields, "limit_bytes", rs.GetDiskLimitBytes))
 	warnIfNotSet(setIfNotNil(disk.fields, "used_bytes", rs.GetDiskUsedBytes))
 
-	// TODO (philipnrmn) *rs.DiskStatistics for per-volume stats
+	if ds := rs.GetDiskStatistics(); ds != nil {
+		results = append(results, cDiskStatistics(ds)...)
+	}
 
 	if bs := rs.GetBlkioStatistics(); bs != nil {
 		results = append(results, cBlkioMeasurements(*bs)...)
 	}
 
-	// TODO (philipnrmn) *rs.Perf for perf stats
+	if perf := rs.GetPerf(); perf != nil {
+		m := newMeasurement("perf")
+		warnIfNotSet(setIfNotNil(m.fields, "timestamp", perf.GetTimestamp))
+		warnIfNotSet(setIfNotNil(m.fields, "duration", perf.GetDuration))
+		warnIfNotSet(setIfNotNil(m.fields, "cycles", perf.GetCycles))
+		warnIfNotSet(setIfNotNil(m.fields, "stalled_cycles_frontend", perf.GetStalledCyclesFrontend))
+		warnIfNotSet(setIfNotNil(m.fields, "stalled_cycles_backend", perf.GetStalledCyclesBackend))
+		warnIfNotSet(setIfNotNil(m.fields, "instructions", perf.GetInstructions))
+		warnIfNotSet(setIfNotNil(m.fields, "cache_references", perf.GetCacheReferences))
+		warnIfNotSet(setIfNotNil(m.fields, "cache_misses", perf.GetCacheMisses))
+		warnIfNotSet(setIfNotNil(m.fields, "branches", perf.GetBranches))
+		warnIfNotSet(setIfNotNil(m.fields, "branch_misses", perf.GetBranchMisses))
+		warnIfNotSet(setIfNotNil(m.fields, "bus_cycles", perf.GetBusCycles))
+		warnIfNotSet(setIfNotNil(m.fields, "ref_cycles", perf.GetRefCycles))
+		warnIfNotSet(setIfNotNil(m.fields, "cpu_clock", perf.GetCPUClock))
+		warnIfNotSet(setIfNotNil(m.fields, "task_clock", perf.GetTaskClock))
+		warnIfNotSet(setIfNotNil(m.fields, "page_faults", perf.GetPageFaults))
+		warnIfNotSet(setIfNotNil(m.fields, "minor_faults", perf.GetMinorFaults))
+		warnIfNotSet(setIfNotNil(m.fields, "major_faults", perf.GetMajorFaults))
+		warnIfNotSet(setIfNotNil(m.fields, "context_switches", perf.GetContextSwitches))
+		warnIfNotSet(setIfNotNil(m.fields, "cpu_migrations", perf.GetCPUMigrations))
+		warnIfNotSet(setIfNotNil(m.fields, "alignment_faults", perf.GetAlignmentFaults))
+		warnIfNotSet(setIfNotNil(m.fields, "emulation_faults", perf.GetEmulationFaults))
+		warnIfNotSet(setIfNotNil(m.fields, "l1_dcache_loads", perf.GetL1DcacheLoads))
+		warnIfNotSet(setIfNotNil(m.fields, "l1_dcache_load_misses", perf.GetL1DcacheLoadMisses))
+		warnIfNotSet(setIfNotNil(m.fields, "l1_dcache_stores", perf.GetL1DcacheStores))
+		warnIfNotSet(setIfNotNil(m.fields, "l1_dcache_store_misses", perf.GetL1DcacheStoreMisses))
+		warnIfNotSet(setIfNotNil(m.fields, "l1_dcache_prefetches", perf.GetL1DcachePrefetches))
+		warnIfNotSet(setIfNotNil(m.fields, "l1_dcache_prefetch_misses", perf.GetL1DcachePrefetchMisses))
+		warnIfNotSet(setIfNotNil(m.fields, "l1_icache_loads", perf.GetL1IcacheLoads))
+		warnIfNotSet(setIfNotNil(m.fields, "l1_icache_load_misses", perf.GetL1IcacheLoadMisses))
+		warnIfNotSet(setIfNotNil(m.fields, "l1_icache_prefetches", perf.GetL1IcachePrefetches))
+		warnIfNotSet(setIfNotNil(m.fields, "l1_icache_prefetch_misses", perf.GetL1IcachePrefetchMisses))
+		warnIfNotSet(setIfNotNil(m.fields, "llc_loads", perf.GetLLCLoads))
+		warnIfNotSet(setIfNotNil(m.fields, "llc_load_misses", perf.GetLLCLoadMisses))
+		warnIfNotSet(setIfNotNil(m.fields, "llc_stores", perf.GetLLCStores))
+		warnIfNotSet(setIfNotNil(m.fields, "llc_store_misses", perf.GetLLCStoreMisses))
+		warnIfNotSet(setIfNotNil(m.fields, "llc_prefetches", perf.GetLLCPrefetches))
+		warnIfNotSet(setIfNotNil(m.fields, "llc_prefetch_misses", perf.GetLLCPrefetchMisses))
+		warnIfNotSet(setIfNotNil(m.fields, "dtlb_loads", perf.GetDTLBLoads))
+		warnIfNotSet(setIfNotNil(m.fields, "dtlb_load_misses", perf.GetDTLBLoadMisses))
+		warnIfNotSet(setIfNotNil(m.fields, "dtlb_stores", perf.GetDTLBStores))
+		warnIfNotSet(setIfNotNil(m.fields, "dtlb_store_misses", perf.GetDTLBStoreMisses))
+		warnIfNotSet(setIfNotNil(m.fields, "dtlb_prefetches", perf.GetDTLBPrefetches))
+		warnIfNotSet(setIfNotNil(m.fields, "dtlb_prefetch_misses", perf.GetDTLBPrefetchMisses))
+		warnIfNotSet(setIfNotNil(m.fields, "itlb_loads", perf.GetITLBLoads))
+		warnIfNotSet(setIfNotNil(m.fields, "itlb_load_misses", perf.GetITLBLoadMisses))
+		warnIfNotSet(setIfNotNil(m.fields, "branch_loads", perf.GetBranchLoads))
+		warnIfNotSet(setIfNotNil(m.fields, "branch_load_misses", perf.GetBranchLoadMisses))
+		warnIfNotSet(setIfNotNil(m.fields, "node_loads", perf.GetNodeLoads))
+		warnIfNotSet(setIfNotNil(m.fields, "node_load_misses", perf.GetNodeLoadMisses))
+		warnIfNotSet(setIfNotNil(m.fields, "node_stores", perf.GetNodeStores))
+		warnIfNotSet(setIfNotNil(m.fields, "node_store_misses", perf.GetNodeStoreMisses))
+		warnIfNotSet(setIfNotNil(m.fields, "node_prefetches", perf.GetNodePrefetches))
+		warnIfNotSet(setIfNotNil(m.fields, "node_prefetch_misses", perf.GetNodePrefetchMisses))
+
+		results = append(results, m)
+	}
 
 	warnIfNotSet(setIfNotNil(net.fields, "rx_packets", rs.GetNetRxPackets))
 	warnIfNotSet(setIfNotNil(net.fields, "rx_bytes", rs.GetNetRxBytes))
@@ -258,8 +317,113 @@ func cMeasurements(c agent.Response_GetContainers_Container) []measurement {
 	warnIfNotSet(setIfNotNil(net.fields, "tcp_rtt_microsecs_p99", rs.GetNetTCPRttMicrosecsP99))
 	warnIfNotSet(setIfNotNil(net.fields, "tcp_active_connections", rs.GetNetTCPActiveConnections))
 	warnIfNotSet(setIfNotNil(net.fields, "tcp_time_wait_connections", rs.GetNetTCPTimeWaitConnections))
-	// TODO (philipnrmn) *rs.NetTrafficControlStatistics  for net traffic control statistics
-	// TODO (philipnrmn) *rs.NetSNMPStatistics for net snmp statistics
+
+	if ntcs := rs.GetNetTrafficControlStatistics(); ntcs != nil {
+		results = append(results, cNetTrafficControlStatistics(ntcs)...)
+	}
+
+	if snmp := rs.GetNetSNMPStatistics(); snmp != nil {
+		if ipStats := snmp.GetIPStats(); ipStats != nil {
+			warnIfNotSet(setIfNotNil(net.fields, "ip_forwarding", ipStats.GetForwarding))
+			warnIfNotSet(setIfNotNil(net.fields, "ip_default_ttl", ipStats.GetDefaultTTL))
+			warnIfNotSet(setIfNotNil(net.fields, "ip_in_receives", ipStats.GetInReceives))
+			warnIfNotSet(setIfNotNil(net.fields, "ip_in_hdr_errors", ipStats.GetInHdrErrors))
+			warnIfNotSet(setIfNotNil(net.fields, "ip_in_addr_errors", ipStats.GetInAddrErrors))
+			warnIfNotSet(setIfNotNil(net.fields, "ip_forw_datagrams", ipStats.GetForwDatagrams))
+			warnIfNotSet(setIfNotNil(net.fields, "ip_in_unknown_protos", ipStats.GetInUnknownProtos))
+			warnIfNotSet(setIfNotNil(net.fields, "ip_in_discards", ipStats.GetInDiscards))
+			warnIfNotSet(setIfNotNil(net.fields, "ip_in_delivers", ipStats.GetInDelivers))
+			warnIfNotSet(setIfNotNil(net.fields, "ip_out_requests", ipStats.GetOutRequests))
+			warnIfNotSet(setIfNotNil(net.fields, "ip_out_discards", ipStats.GetOutDiscards))
+			warnIfNotSet(setIfNotNil(net.fields, "ip_out_no_routes", ipStats.GetOutNoRoutes))
+			warnIfNotSet(setIfNotNil(net.fields, "ip_reasm_timeout", ipStats.GetReasmTimeout))
+			warnIfNotSet(setIfNotNil(net.fields, "ip_reasm_reqds", ipStats.GetReasmReqds))
+			warnIfNotSet(setIfNotNil(net.fields, "ip_reasm_oks", ipStats.GetReasmOKs))
+			warnIfNotSet(setIfNotNil(net.fields, "ip_reasm_fails", ipStats.GetReasmFails))
+			warnIfNotSet(setIfNotNil(net.fields, "ip_frag_oks", ipStats.GetFragOKs))
+			warnIfNotSet(setIfNotNil(net.fields, "ip_frag_fails", ipStats.GetFragFails))
+			warnIfNotSet(setIfNotNil(net.fields, "ip_frag_creates", ipStats.GetFragCreates))
+		}
+
+		if icmpStats := snmp.GetICMPStats(); icmpStats != nil {
+			warnIfNotSet(setIfNotNil(net.fields, "icmp_in_msgs", icmpStats.GetInMsgs))
+			warnIfNotSet(setIfNotNil(net.fields, "icmp_in_errors", icmpStats.GetInErrors))
+			warnIfNotSet(setIfNotNil(net.fields, "icmp_in_csum_errors", icmpStats.GetInCsumErrors))
+			warnIfNotSet(setIfNotNil(net.fields, "icmp_in_dest_unreachs", icmpStats.GetInDestUnreachs))
+			warnIfNotSet(setIfNotNil(net.fields, "icmp_in_time_excds", icmpStats.GetInTimeExcds))
+			warnIfNotSet(setIfNotNil(net.fields, "icmp_in_parm_probs", icmpStats.GetInParmProbs))
+			warnIfNotSet(setIfNotNil(net.fields, "icmp_in_src_quenchs", icmpStats.GetInSrcQuenchs))
+			warnIfNotSet(setIfNotNil(net.fields, "icmp_in_redirects", icmpStats.GetInRedirects))
+			warnIfNotSet(setIfNotNil(net.fields, "icmp_in_echos", icmpStats.GetInEchos))
+			warnIfNotSet(setIfNotNil(net.fields, "icmp_in_echo_reps", icmpStats.GetInEchoReps))
+			warnIfNotSet(setIfNotNil(net.fields, "icmp_in_timestamps", icmpStats.GetInTimestamps))
+			warnIfNotSet(setIfNotNil(net.fields, "icmp_in_timestamp_reps", icmpStats.GetInTimestampReps))
+			warnIfNotSet(setIfNotNil(net.fields, "icmp_in_addr_masks", icmpStats.GetInAddrMasks))
+			warnIfNotSet(setIfNotNil(net.fields, "icmp_in_addr_mark_reps", icmpStats.GetInAddrMaskReps))
+			warnIfNotSet(setIfNotNil(net.fields, "icmp_out_msgs", icmpStats.GetOutMsgs))
+			warnIfNotSet(setIfNotNil(net.fields, "icmp_out_errors", icmpStats.GetOutErrors))
+			warnIfNotSet(setIfNotNil(net.fields, "icmp_out_dest_unreachs", icmpStats.GetOutDestUnreachs))
+			warnIfNotSet(setIfNotNil(net.fields, "icmp_out_time_excds", icmpStats.GetOutTimeExcds))
+			warnIfNotSet(setIfNotNil(net.fields, "icmp_out_parm_probs", icmpStats.GetOutParmProbs))
+			warnIfNotSet(setIfNotNil(net.fields, "icmp_out_src_quenchs", icmpStats.GetOutSrcQuenchs))
+			warnIfNotSet(setIfNotNil(net.fields, "icmp_out_redirects", icmpStats.GetOutRedirects))
+			warnIfNotSet(setIfNotNil(net.fields, "icmp_out_echos", icmpStats.GetOutEchos))
+			warnIfNotSet(setIfNotNil(net.fields, "icmp_out_echo_reps", icmpStats.GetOutEchoReps))
+			warnIfNotSet(setIfNotNil(net.fields, "icmp_out_timestamps", icmpStats.GetOutTimestamps))
+			warnIfNotSet(setIfNotNil(net.fields, "icmp_out_timestamp_reps", icmpStats.GetOutTimestampReps))
+			warnIfNotSet(setIfNotNil(net.fields, "icmp_out_addr_masks", icmpStats.GetOutAddrMasks))
+			warnIfNotSet(setIfNotNil(net.fields, "icmp_out_addr_mask_reps", icmpStats.GetOutAddrMaskReps))
+		}
+
+		if tcpStats := snmp.GetTCPStats(); tcpStats != nil {
+			warnIfNotSet(setIfNotNil(net.fields, "tcp_rto_algorithm", tcpStats.GetRtoAlgorithm))
+			warnIfNotSet(setIfNotNil(net.fields, "tcp_rto_min", tcpStats.GetRtoMin))
+			warnIfNotSet(setIfNotNil(net.fields, "tcp_rto_max", tcpStats.GetRtoMax))
+			warnIfNotSet(setIfNotNil(net.fields, "tcp_max_conn", tcpStats.GetMaxConn))
+			warnIfNotSet(setIfNotNil(net.fields, "tcp_active_opens", tcpStats.GetActiveOpens))
+			warnIfNotSet(setIfNotNil(net.fields, "tcp_passive_opens", tcpStats.GetPassiveOpens))
+			warnIfNotSet(setIfNotNil(net.fields, "tcp_attempt_fails", tcpStats.GetAttemptFails))
+			warnIfNotSet(setIfNotNil(net.fields, "tcp_estab_resets", tcpStats.GetEstabResets))
+			warnIfNotSet(setIfNotNil(net.fields, "tcp_curr_estab", tcpStats.GetCurrEstab))
+			warnIfNotSet(setIfNotNil(net.fields, "tcp_in_segs", tcpStats.GetInSegs))
+			warnIfNotSet(setIfNotNil(net.fields, "tcp_out_segs", tcpStats.GetOutSegs))
+			warnIfNotSet(setIfNotNil(net.fields, "tcp_retrans_segs", tcpStats.GetRetransSegs))
+			warnIfNotSet(setIfNotNil(net.fields, "tcp_in_errs", tcpStats.GetInErrs))
+			warnIfNotSet(setIfNotNil(net.fields, "tcp_out_rsts", tcpStats.GetOutRsts))
+			warnIfNotSet(setIfNotNil(net.fields, "tcp_in_csum_errors", tcpStats.GetInCsumErrors))
+		}
+
+		if udpStats := snmp.GetUDPStats(); udpStats != nil {
+			warnIfNotSet(setIfNotNil(net.fields, "udp_in_datagrams", udpStats.GetInDatagrams))
+			warnIfNotSet(setIfNotNil(net.fields, "udp_no_ports", udpStats.GetNoPorts))
+			warnIfNotSet(setIfNotNil(net.fields, "udp_in_errors", udpStats.GetInErrors))
+			warnIfNotSet(setIfNotNil(net.fields, "udp_out_datagrams", udpStats.GetOutDatagrams))
+			warnIfNotSet(setIfNotNil(net.fields, "udp_rcvbuf_errors", udpStats.GetRcvbufErrors))
+			warnIfNotSet(setIfNotNil(net.fields, "udp_sndbuf_errors", udpStats.GetSndbufErrors))
+			warnIfNotSet(setIfNotNil(net.fields, "udp_in_csum_errors", udpStats.GetInCsumErrors))
+			warnIfNotSet(setIfNotNil(net.fields, "udp_ignored_multi", udpStats.GetIgnoredMulti))
+		}
+	}
+
+	return results
+}
+
+// cDiskStatistics tags each set of disk statistics with the
+// volume persistence ID and principal, if given
+func cDiskStatistics(ds []mesos.DiskStatistics) []measurement {
+	var results []measurement
+
+	for _, disk := range ds {
+		m := newMeasurement("disk")
+		if p := disk.GetPersistence(); p != nil {
+			m.tags["volume_persistence_id"] = p.GetID()
+			m.tags["volume_persistence_principal"] = p.GetPrincipal()
+		}
+		warnIfNotSet(setIfNotNil(m.fields, "limit_bytes", disk.GetLimitBytes))
+		warnIfNotSet(setIfNotNil(m.fields, "used_bytes", disk.GetUsedBytes))
+
+		results = append(results, m)
+	}
 
 	return results
 }
@@ -305,6 +469,30 @@ func blkioTotalGetter(f func() []mesos.CgroupInfo_Blkio_Value) func() uint64 {
 	}
 }
 
+// cNetTrafficControlStatistics tags each set of traffic control statistics
+// with the limiter ID
+func cNetTrafficControlStatistics(tcs []mesos.TrafficControlStatistics) []measurement {
+	var results []measurement
+
+	for _, tc := range tcs {
+		m := newMeasurement("net")
+		m.tags["id"] = tc.GetID()
+		warnIfNotSet(setIfNotNil(m.fields, "tx_backlog", tc.GetBacklog))
+		warnIfNotSet(setIfNotNil(m.fields, "tx_bytes", tc.GetBytes))
+		warnIfNotSet(setIfNotNil(m.fields, "tx_dropped", tc.GetDrops))
+		warnIfNotSet(setIfNotNil(m.fields, "tx_over_limits", tc.GetOverlimits))
+		warnIfNotSet(setIfNotNil(m.fields, "tx_packets", tc.GetPackets))
+		warnIfNotSet(setIfNotNil(m.fields, "tx_qlen", tc.GetQlen))
+		warnIfNotSet(setIfNotNil(m.fields, "tx_rate_bps", tc.GetRateBPS))
+		warnIfNotSet(setIfNotNil(m.fields, "tx_rate_pps", tc.GetRatePPS))
+		warnIfNotSet(setIfNotNil(m.fields, "tx_requeues", tc.GetRequeues))
+
+		results = append(results, m)
+	}
+
+	return results
+}
+
 // cTags extracts relevant metadata from a Container object as a map of tags
 func cTags(c agent.Response_GetContainers_Container) map[string]string {
 	return map[string]string{"container_id": c.ContainerID.Value}
@@ -332,6 +520,10 @@ func setIfNotNil(target map[string]interface{}, key string, get interface{}) err
 	case func() uint64:
 		val = get.(func() uint64)()
 		zero = uint64(0)
+		break
+	case func() int64:
+		val = get.(func() int64)()
+		zero = int64(0)
 		break
 	case func() float64:
 		val = get.(func() float64)()
