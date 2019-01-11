@@ -37,7 +37,7 @@
             }
           ],
           "blkio_statistics": {
-            "cfq": [
+            "cfq_recursive": [
               {
                 "io_serviced": [
                   {
@@ -73,62 +73,6 @@
                   {
                     "op": "TOTAL",
                     "value": 6
-                  }
-                ]
-              }
-            ],
-            "cfq_recursive": [
-              {
-                "io_serviced": [
-                  {
-                    "op": "TOTAL",
-                    "value": 0
-                  }
-                ],
-                "io_service_bytes": [
-                  {
-                    "op": "TOTAL",
-                    "value": 0
-                  }
-                ],
-                "io_service_time": [
-                  {
-                    "op": "TOTAL",
-                    "value": 0
-                  }
-                ],
-                "io_wait_time": [
-                  {
-                    "op": "TOTAL",
-                    "value": 0
-                  }
-                ],
-                "io_merged": [
-                  {
-                    "op": "TOTAL",
-                    "value": 0
-                  }
-                ],
-                "io_queued": [
-                  {
-                    "op": "TOTAL",
-                    "value": 0
-                  }
-                ]
-              }
-            ],
-            "throttling": [
-              {
-                "io_serviced": [
-                  {
-                    "op": "TOTAL",
-                    "value": 0
-                  }
-                ],
-                "io_service_bytes": [
-                  {
-                    "op": "TOTAL",
-                    "value": 0
                   }
                 ]
               }

@@ -1,4 +1,4 @@
-# Scenario: blkio
+# Scenario: blkio_cfq
 
 - Given that a task is running with a blkio device
 - When container metrics are retrieved

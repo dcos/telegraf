@@ -52,16 +52,16 @@ var (
 			ts: 1388534400,
 		},
 		testCase{
-			name:    "blkio",
-			fixture: "blkio",
+			name:    "blkio cfq",
+			fixture: "blkio_cfq",
 			measurements: map[string]map[string]interface{}{
 				"blkio": map[string]interface{}{
-					"io_serviced":      uint64(1),
-					"io_service_bytes": uint64(2),
-					"io_service_time":  uint64(3),
-					"io_wait_time":     uint64(4),
-					"io_merged":        uint64(5),
-					"io_queued":        uint64(6),
+					"io_serviced_total":      uint64(1),
+					"io_service_bytes_total": uint64(2),
+					"io_service_time_total":  uint64(3),
+					"io_wait_time_total":     uint64(4),
+					"io_merged_total":        uint64(5),
+					"io_queued_total":        uint64(6),
 				},
 			},
 			tags: map[string]string{
@@ -72,8 +72,82 @@ var (
 			ts: 1388534400,
 		},
 		testCase{
+			name:    "blkio cfq recursive",
+			fixture: "blkio_cfq_recursive",
+			measurements: map[string]map[string]interface{}{
+				"blkio": map[string]interface{}{
+					"io_serviced_total":      uint64(1),
+					"io_service_bytes_total": uint64(2),
+					"io_service_time_total":  uint64(3),
+					"io_wait_time_total":     uint64(4),
+					"io_merged_total":        uint64(5),
+					"io_queued_total":        uint64(6),
+				},
+			},
+			tags: map[string]string{
+				"container_id": "abc123",
+				"device":       "default",
+				"policy":       "cfq_recursive",
+			},
+			ts: 1388534400,
+		},
+		testCase{
+			name:    "blkio throttling",
+			fixture: "blkio_throttling",
+			measurements: map[string]map[string]interface{}{
+				"blkio": map[string]interface{}{
+					"io_serviced_total":      uint64(1),
+					"io_serviced_read":       uint64(11),
+					"io_service_bytes_total": uint64(2),
+					"io_service_bytes_async": uint64(22),
+				},
+			},
+			tags: map[string]string{
+				"container_id": "abc123",
+				"device":       "111.22",
+				"policy":       "throttling",
+			},
+			ts: 1388534400,
+		},
+		testCase{
+			name:    "blkio throttling",
+			fixture: "blkio_throttling",
+			measurements: map[string]map[string]interface{}{
+				"blkio": map[string]interface{}{
+					"io_serviced_total":      uint64(1),
+					"io_serviced_read":       uint64(11),
+					"io_service_bytes_total": uint64(2),
+					"io_service_bytes_async": uint64(22),
+				},
+			},
+			tags: map[string]string{
+				"container_id": "abc123",
+				"device":       "333.44",
+				"policy":       "throttling",
+			},
+			ts: 1388534400,
+		},
+		testCase{
+			name:    "blkio throttling",
+			fixture: "blkio_throttling",
+			measurements: map[string]map[string]interface{}{
+				"blkio": map[string]interface{}{
+					"io_serviced_total":      uint64(1),
+					"io_serviced_read":       uint64(11),
+					"io_service_bytes_total": uint64(2),
+					"io_service_bytes_async": uint64(22),
+				},
+			},
+			tags: map[string]string{
+				"container_id": "abc123",
+				"device":       "222.33",
+				"policy":       "throttling",
+			},
+			ts: 1388534400,
+		},
+		testCase{
 			name:    "disk statistics",
-			fixture: "blkio",
+			fixture: "blkio_cfq",
 			measurements: map[string]map[string]interface{}{
 				"disk": map[string]interface{}{
 					"limit_bytes": uint64(1073741824),
@@ -89,7 +163,7 @@ var (
 		},
 		testCase{
 			name:    "perf",
-			fixture: "blkio",
+			fixture: "blkio_cfq",
 			measurements: map[string]map[string]interface{}{
 				"perf": map[string]interface{}{
 					"timestamp": 1535056712.427976,

@@ -7,6 +7,7 @@ import (
 	"log"
 	"math"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/influxdata/telegraf"
@@ -428,10 +429,19 @@ func cDiskStatistics(ds []mesos.DiskStatistics) []measurement {
 	return results
 }
 
-// cBlkioMeasurement flattens the deeply nested blkio statistics struct into
-// a set of measurements, tagged by device ID and blkio policy
+// cBlkioMeasurement flattens the deeply nested blkio_cfq statistics struct into
+// a set of measurements, tagged by device ID and blkio_cfq policy
 func cBlkioMeasurements(bs mesos.CgroupInfo_Blkio_Statistics) []measurement {
 	var results []measurement
+
+	ops := []mesos.CgroupInfo_Blkio_Operation{
+		mesos.CgroupInfo_Blkio_UNKNOWN,
+		mesos.CgroupInfo_Blkio_TOTAL,
+		mesos.CgroupInfo_Blkio_READ,
+		mesos.CgroupInfo_Blkio_WRITE,
+		mesos.CgroupInfo_Blkio_SYNC,
+		mesos.CgroupInfo_Blkio_ASYNC,
+	}
 
 	for _, cfq := range bs.GetCFQ() {
 		blkio := newMeasurement("blkio")
@@ -441,12 +451,55 @@ func cBlkioMeasurements(bs mesos.CgroupInfo_Blkio_Statistics) []measurement {
 		} else {
 			blkio.tags["device"] = "default"
 		}
-		warnIfNotSet(setIfNotNil(blkio.fields, "io_serviced", blkioTotalGetter(cfq.GetIOServiced)))
-		warnIfNotSet(setIfNotNil(blkio.fields, "io_service_bytes", blkioTotalGetter(cfq.GetIOServiceBytes)))
-		warnIfNotSet(setIfNotNil(blkio.fields, "io_service_time", blkioTotalGetter(cfq.GetIOServiceTime)))
-		warnIfNotSet(setIfNotNil(blkio.fields, "io_wait_time", blkioTotalGetter(cfq.GetIOWaitTime)))
-		warnIfNotSet(setIfNotNil(blkio.fields, "io_merged", blkioTotalGetter(cfq.GetIOMerged)))
-		warnIfNotSet(setIfNotNil(blkio.fields, "io_queued", blkioTotalGetter(cfq.GetIOQueued)))
+		for _, op := range ops {
+			suffix := strings.ToLower(mesos.CgroupInfo_Blkio_Operation_name[int32(op)])
+			warnIfNotSet(setIfNotNil(blkio.fields, fmt.Sprintf("io_serviced_%s", suffix), blkioGetter(cfq.GetIOServiced, op)))
+			warnIfNotSet(setIfNotNil(blkio.fields, fmt.Sprintf("io_service_bytes_%s", suffix), blkioGetter(cfq.GetIOServiceBytes, op)))
+			warnIfNotSet(setIfNotNil(blkio.fields, fmt.Sprintf("io_service_time_%s", suffix), blkioGetter(cfq.GetIOServiceTime, op)))
+			warnIfNotSet(setIfNotNil(blkio.fields, fmt.Sprintf("io_wait_time_%s", suffix), blkioGetter(cfq.GetIOWaitTime, op)))
+			warnIfNotSet(setIfNotNil(blkio.fields, fmt.Sprintf("io_merged_%s", suffix), blkioGetter(cfq.GetIOMerged, op)))
+			warnIfNotSet(setIfNotNil(blkio.fields, fmt.Sprintf("io_queued_%s", suffix), blkioGetter(cfq.GetIOQueued, op)))
+		}
+
+		results = append(results, blkio)
+	}
+
+	for _, cfq := range bs.GetCFQRecursive() {
+		blkio := newMeasurement("blkio")
+		blkio.tags["policy"] = "cfq_recursive"
+		if dev := cfq.GetDevice(); dev != nil {
+			blkio.tags["device"] = fmt.Sprintf("%d.%d", dev.GetMajorNumber(), dev.GetMinorNumber())
+		} else {
+			blkio.tags["device"] = "default"
+		}
+		for _, op := range ops {
+			suffix := strings.ToLower(mesos.CgroupInfo_Blkio_Operation_name[int32(op)])
+			warnIfNotSet(setIfNotNil(blkio.fields, fmt.Sprintf("io_serviced_%s", suffix), blkioGetter(cfq.GetIOServiced, op)))
+			warnIfNotSet(setIfNotNil(blkio.fields, fmt.Sprintf("io_service_bytes_%s", suffix), blkioGetter(cfq.GetIOServiceBytes, op)))
+			warnIfNotSet(setIfNotNil(blkio.fields, fmt.Sprintf("io_service_time_%s", suffix), blkioGetter(cfq.GetIOServiceTime, op)))
+			warnIfNotSet(setIfNotNil(blkio.fields, fmt.Sprintf("io_wait_time_%s", suffix), blkioGetter(cfq.GetIOWaitTime, op)))
+			warnIfNotSet(setIfNotNil(blkio.fields, fmt.Sprintf("io_merged_%s", suffix), blkioGetter(cfq.GetIOMerged, op)))
+			warnIfNotSet(setIfNotNil(blkio.fields, fmt.Sprintf("io_queued_%s", suffix), blkioGetter(cfq.GetIOQueued, op)))
+		}
+
+		results = append(results, blkio)
+	}
+
+	for _, throttling := range bs.GetThrottling() {
+		blkio := newMeasurement("blkio")
+		blkio.tags["policy"] = "throttling"
+		if dev := throttling.GetDevice(); dev != nil {
+			blkio.tags["device"] = fmt.Sprintf("%d.%d", dev.GetMajorNumber(), dev.GetMinorNumber())
+		} else {
+			blkio.tags["device"] = "default"
+		}
+		for _, op := range ops {
+			suffix := strings.ToLower(mesos.CgroupInfo_Blkio_Operation_name[int32(op)])
+			warnIfNotSet(setIfNotNil(blkio.fields, fmt.Sprintf("io_serviced_%s", suffix),
+				blkioGetter(throttling.GetIOServiced, op)))
+			warnIfNotSet(setIfNotNil(blkio.fields, fmt.Sprintf("io_service_bytes_%s", suffix),
+				blkioGetter(throttling.GetIOServiceBytes, op)))
+		}
 
 		results = append(results, blkio)
 	}
@@ -454,14 +507,14 @@ func cBlkioMeasurements(bs mesos.CgroupInfo_Blkio_Statistics) []measurement {
 	return results
 }
 
-// blkioTotalGetter is a convenience method allowing us to unpick the nested
+// blkioGetter is a convenience method allowing us to unpick the nested
 // blkio_value object. It returns a method which when invoked, returns the
-// value of the total of the field returned by its parameter function
-func blkioTotalGetter(f func() []mesos.CgroupInfo_Blkio_Value) func() uint64 {
+// value of the field's operation type (passed in as param) returned by
+// its parameter function
+func blkioGetter(f func() []mesos.CgroupInfo_Blkio_Value, op mesos.CgroupInfo_Blkio_Operation) func() uint64 {
 	return func() uint64 {
 		for _, v := range f() {
-			// TODO (philipnrmn) consider returning all operations, not just total
-			if v.GetOp() == mesos.CgroupInfo_Blkio_TOTAL {
+			if v.GetOp() == op {
 				return v.GetValue()
 			}
 		}
