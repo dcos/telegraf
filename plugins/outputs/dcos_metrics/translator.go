@@ -84,6 +84,7 @@ func (t *producerTranslator) Translate(metric telegraf.Metric) (msg producers.Me
 		ok = false
 	}
 
+	msg.Timestamp = time.Now().Unix()
 	return
 }
 

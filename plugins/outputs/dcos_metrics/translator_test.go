@@ -763,6 +763,12 @@ func TestTranslate(t *testing.T) {
 			if !ok {
 				t.Fatal("translation failed to produce a MetricsMessage")
 			}
+			if msg.Timestamp == 0 {
+				t.Fatal("timestamp expected to be set on MetricsMessage")
+			}
+			// omit checking timestamp in DeepEqual since time.Now() is used which
+			// is hard to test
+			msg.Timestamp = 0
 			if !reflect.DeepEqual(msg, tc.output) {
 				t.Log("expected:", tc.output)
 				t.Log("actually:", msg)
@@ -864,6 +870,33 @@ func TestTranslateError(t *testing.T) {
 			_, _, err := translator.Translate(tc.input.NewMetric(t))
 			if err == nil {
 				t.Fatal("translation unexpectedly did not return an error")
+			}
+		})
+	}
+}
+
+func TestTranslateCreateError(t *testing.T) {
+	type testCase struct {
+		name  string
+		input metricParams
+	}
+
+	testCases := []testCase{
+		testCase{
+			name: "unable to create a MetricsMessage",
+			input: metricParams{
+				name: "unknown.unknown",
+				tm:   tm,
+				tp:   telegraf.Gauge,
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, ok, _ := translator.Translate(tc.input.NewMetric(t))
+			if ok {
+				t.Fatal("translation unexpectedly created a MetricsMessage")
 			}
 		})
 	}
