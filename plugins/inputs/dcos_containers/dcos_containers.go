@@ -28,7 +28,7 @@ const sampleConfig = `
   ## The period after which requests to mesos agent should time out
   # timeout = "10s"
   ## The user agent to send with requests
-  user_agent = "telegraf-dcos-containers"
+  user_agent = "Telegraf-dcos-containers"
   ## Optional IAM configuration
   # ca_certificate_path = "/run/dcos/pki/CA/ca-bundle.crt"
   # iam_config_path = "/run/dcos/etc/dcos-telegraf/service_account.json"

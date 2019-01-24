@@ -60,7 +60,7 @@ const sampleConfig = `
 	## label when tagging
 	whitelist_prefix = []
   	## The user agent to send with requests
-	user_agent = "telegraf-dcos-metadata"
+	user_agent = "Telegraf-dcos-metadata"
 	## Optional IAM configuration
 	# ca_certificate_path = "/run/dcos/pki/CA/ca-bundle.crt"
 	# iam_config_path = "/run/dcos/etc/dcos-telegraf/service_account.json"

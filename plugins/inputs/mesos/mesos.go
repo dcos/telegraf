@@ -125,7 +125,7 @@ var sampleConfig = `
   ## Timeout, in ms.
   timeout = 100
   ## A list of Mesos masters.
-  masters = ["http://localhost:5050"]
+  masters = ["http://$NODE_PRIVATE_IP:5050"]
   ## Master metrics groups to be collected, by default, all enabled.
   master_collections = [
     "resources",
@@ -152,7 +152,7 @@ var sampleConfig = `
   #   "messages",
   # ]
   ## The user agent to send with requests
-  user_agent = "telegraf-mesos"
+  user_agent = "Telegraf-mesos"
 
   ## Optional TLS Config
   # tls_ca = "/etc/telegraf/ca.pem"

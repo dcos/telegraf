@@ -12,11 +12,11 @@ generate it using `telegraf --usage dcos_containers`.
 # Telegraf plugin for gathering resource metrics about mesos containers
 [[inputs.dcos_containers]]
   ## The URL of the mesos agent
-  mesos_agent_url = "http://localhost:5051"
+  mesos_agent_url = "http://$NODE_PRIVATE_IP:5051"
   ## The period after which requests to mesos agent should time out
   timeout = "10s"
   ## The user agent to send with requests
-  user_agent = "telegraf-dcos-containers"
+  user_agent = "Telegraf-dcos-containers"
   ## Optional IAM configuration
   # ca_certificate_path = "/run/dcos/pki/CA/ca-bundle.crt"
   # iam_config_path = "/run/dcos/etc/dcos-telegraf/service_account.json"

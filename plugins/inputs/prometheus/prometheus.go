@@ -61,11 +61,11 @@ var sampleConfig = `
 
   ## The URL of the local mesos agent
   mesos_agent_url = "http://$NODE_PRIVATE_IP:5051"
-	## The period after which requests to mesos agent should time out
-	mesos_timeout = "10s"
+  ## The period after which requests to mesos agent should time out
+  mesos_timeout = "10s"
 
   ## The user agent to send with requests
-  user_agent = "telegraf-prometheus"
+  user_agent = "Telegraf-prometheus"
   ## Optional IAM configuration
   # ca_certificate_path = "/run/dcos/pki/CA/ca-bundle.crt"
   # iam_config_path = "/run/dcos/etc/dcos-telegraf/service_account.json"

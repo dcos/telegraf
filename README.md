@@ -142,6 +142,8 @@ configuration options.
 * [couchbase](./plugins/inputs/couchbase)
 * [couchdb](./plugins/inputs/couchdb)
 * [DC/OS](./plugins/inputs/dcos)
+* [dcos_containers](./plugins/inputs/dcos_containers)
+* [dcos_statsd](./plugins/inputs/dcos_statsd)
 * [disque](./plugins/inputs/disque)
 * [dmcache](./plugins/inputs/dmcache)
 * [dns query time](./plugins/inputs/dns_query)
@@ -272,6 +274,8 @@ formats may be used with input plugins supporting the `data_format` option:
 ## Processor Plugins
 
 * [converter](./plugins/processors/converter)
+* [dcos_metadata](./plugins/processors/dcos_metadata)
+* [lowercase](./plugins/processors/lowercase)
 * [override](./plugins/processors/override)
 * [printer](./plugins/processors/printer)
 * [regex](./plugins/processors/regex)
@@ -293,6 +297,7 @@ formats may be used with input plugins supporting the `data_format` option:
 * [aws cloudwatch](./plugins/outputs/cloudwatch)
 * [cratedb](./plugins/outputs/cratedb)
 * [datadog](./plugins/outputs/datadog)
+* [dcos_metrics](./plugins/outputs/dcos_metrics)
 * [discard](./plugins/outputs/discard)
 * [elasticsearch](./plugins/outputs/elasticsearch)
 * [file](./plugins/outputs/file)

@@ -14,6 +14,17 @@ in Prometheus format.
   ## An array of Kubernetes services to scrape metrics from.
   # kubernetes_services = ["http://my-service-dns.my-namespace:9100/metrics"]
 
+  ## The URL of the local mesos agent
+  mesos_agent_url = "http://$NODE_PRIVATE_IP:5051"
+  ## The period after which requests to mesos agent should time out
+  mesos_timeout = "10s"
+
+  ## The user agent to send with requests
+  user_agent = "Telegraf-prometheus"
+  ## Optional IAM configuration
+  # ca_certificate_path = "/run/dcos/pki/CA/ca-bundle.crt"
+  # iam_config_path = "/run/dcos/etc/dcos-telegraf/service_account.json"
+
   ## Use bearer token for authorization
   # bearer_token = /path/to/bearer/token
 
@@ -36,6 +47,21 @@ by looking up all A records assigned to the hostname as described in
 
 This method can be used to locate all
 [Kubernetes headless services](https://kubernetes.io/docs/concepts/services-networking/service/#headless-services).
+
+#### Mesos Service Discovery
+
+The URL in the `mesos_agent_url` parameter will be used to discover,
+via the Mesos state endpoint, the ports on Mesos tasks that metrics
+may be exposed on. Collection will be attempted throughout the life
+of the task.
+
+To allow collection of the metrics exposed on any given port (or multiple ports), tasks may EITHER:
+* Label the port with `DCOS_METRICS_FORMAT=prometheus`
+
+OR
+
+* Label the task with `DCOS_METRICS_FORMAT=prometheus`
+* Label the task with the index of the metrics port eg. `DCOS_METRICS_PORT=0`
 
 #### Bearer Token
 
