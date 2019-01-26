@@ -13,6 +13,7 @@ import (
 	"github.com/influxdata/telegraf/internal"
 
 	"github.com/dcos/dcos-go/dcos/http/transport"
+	"github.com/mesos/mesos-go/api/v1/lib/httpcli"
 )
 
 type DCOSConfig struct {
@@ -22,6 +23,31 @@ type DCOSConfig struct {
 }
 
 const defaultUserAgent = "Telegraf"
+
+// MesosClient returns a *httpcli.Client with TLS and IAM configured according to config.
+func MesosClient(mesosUrl string, config DCOSConfig) (*httpcli.Client, error) {
+	uri := mesosUrl + "/api/v1"
+	client := httpcli.New(httpcli.Endpoint(uri), httpcli.DefaultHeader("User-Agent", GetUserAgent(config.UserAgent)))
+	cfgOpts := []httpcli.ConfigOpt{}
+	opts := []httpcli.Opt{}
+
+	var rt http.RoundTripper
+	var err error
+
+	if config.CACertificatePath != "" {
+		if rt, err = config.Transport(); err != nil {
+			return nil, fmt.Errorf("error creating transport: %s", err)
+		}
+		if config.IAMConfigPath != "" {
+			cfgOpts = append(cfgOpts, httpcli.RoundTripper(rt))
+		}
+	}
+
+	opts = append(opts, httpcli.Do(httpcli.With(cfgOpts...)))
+	client.With(opts...)
+
+	return client, nil
+}
 
 func GetUserAgent(override string) string {
 	userAgent := defaultUserAgent

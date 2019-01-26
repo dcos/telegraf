@@ -6,7 +6,6 @@ import (
 	"io"
 	"log"
 	"math"
-	"net/http"
 	"strings"
 	"time"
 
@@ -134,35 +133,17 @@ func (dc *DCOSContainers) getContainers(ctx context.Context, cli calls.Sender) (
 	return gc, nil
 }
 
-// getClient returns an httpcli client configured with the available levels of
-// TLS and IAM according to flags set in the config
+// getClient returns the *httpcli.Client configured to make requests to Mesos that is a member of dc. If it hasn't been
+// created yet, it is created and then returned.
 func (dc *DCOSContainers) getClient() (*httpcli.Client, error) {
-	if dc.client != nil {
-		return dc.client, nil
-	}
-
-	uri := dc.MesosAgentUrl + "/api/v1"
-	client := httpcli.New(httpcli.Endpoint(uri), httpcli.DefaultHeader("User-Agent",
-		dcosutil.GetUserAgent(dc.UserAgent)))
-	cfgOpts := []httpcli.ConfigOpt{}
-	opts := []httpcli.Opt{}
-
-	var rt http.RoundTripper
-	var err error
-
-	if dc.CACertificatePath != "" {
-		if rt, err = dc.DCOSConfig.Transport(); err != nil {
-			return nil, fmt.Errorf("error creating transport: %s", err)
+	if dc.client == nil {
+		client, err := dcosutil.MesosClient(dc.MesosAgentUrl, dc.DCOSConfig)
+		if err != nil {
+			return nil, err
 		}
-		if dc.IAMConfigPath != "" {
-			cfgOpts = append(cfgOpts, httpcli.RoundTripper(rt))
-		}
+		dc.client = client
 	}
-	opts = append(opts, httpcli.Do(httpcli.With(cfgOpts...)))
-	client.With(opts...)
-
-	dc.client = client
-	return client, nil
+	return dc.client, nil
 }
 
 // processResponse reads the response from a triggered request, verifies its
