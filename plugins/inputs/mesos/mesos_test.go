@@ -187,6 +187,7 @@ func generateMetrics() {
 		"allocator/mesos/allocation_run_latency_ms/p999",
 		"allocator/mesos/allocation_run_latency_ms/p9999",
 		"allocator/mesos/roles/*/shares/dominant",
+		"allocator/mesos/roles/marathon/shares/dominant",
 		"allocator/mesos/event_queue_dispatches",
 		"allocator/mesos/offer_filters/roles/*/active",
 		"allocator/mesos/quota/roles/*/resources/disk/offered_or_allocated",
@@ -393,6 +394,9 @@ func TestMesosMaster(t *testing.T) {
 			"allocator/offer_filters/roles/active": masterMetrics["allocator/mesos/offer_filters/roles/*/active"],
 		},
 		{
+			"allocator/roles/shares/dominant": masterMetrics["allocator/mesos/roles/marathon/shares/dominant"],
+		},
+		{
 			"allocator/quota/roles/resources/offered_or_allocated": masterMetrics["allocator/mesos/quota/roles/*/resources/disk/offered_or_allocated"],
 			"allocator/quota/roles/resources/guarantee":            masterMetrics["allocator/mesos/quota/roles/*/resources/disk/guarantee"],
 		},
@@ -471,6 +475,13 @@ func TestMesosMaster(t *testing.T) {
 			"url":       masterTestServer.URL,
 			"role":      "master",
 			"state":     "leader",
+			"role_name": "marathon",
+		},
+		{
+			"server":    m.masterURLs[0].Hostname(),
+			"url":       masterTestServer.URL,
+			"role":      "master",
+			"state":     "leader",
 			"role_name": "*",
 			"resource":  "disk",
 		},
@@ -486,6 +497,12 @@ func TestMesosMaster(t *testing.T) {
 
 	for i := 0; i < len(frameworkFields); i++ {
 		acc.AssertContainsTaggedFields(t, "mesos", frameworkFields[i], frameworkTags[i])
+		for j := 0; j < len(frameworkFields); j++ {
+			if j == i {
+				continue
+			}
+			acc.AssertDoesNotContainsTaggedFields(t, "mesos", frameworkFields[j], frameworkTags[i])
+		}
 	}
 }
 

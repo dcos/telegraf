@@ -62,25 +62,25 @@ func (tf TaggedField) hash() string {
 	buffer := "tf"
 
 	if tf.FrameworkName != "" {
-		buffer += "_" + tf.FrameworkName
+		buffer += "_fr:" + tf.FrameworkName
 	}
 	if tf.CallType != "" {
-		buffer += "_" + tf.CallType
+		buffer += "_ct:" + tf.CallType
 	}
 	if tf.EventType != "" {
-		buffer += "_" + tf.EventType
+		buffer += "_et:" + tf.EventType
 	}
 	if tf.OperationType != "" {
-		buffer += "_" + tf.OperationType
+		buffer += "_ot:" + tf.OperationType
 	}
 	if tf.TaskState != "" {
-		buffer += "_" + tf.TaskState
+		buffer += "_ts:" + tf.TaskState
 	}
 	if tf.RoleName != "" {
-		buffer += "_" + tf.RoleName
+		buffer += "_rn:" + tf.RoleName
 	}
 	if tf.Resource != "" {
-		buffer += "_" + tf.Resource
+		buffer += "_r:" + tf.Resource
 	}
 
 	return buffer
