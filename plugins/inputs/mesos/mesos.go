@@ -62,7 +62,7 @@ func (tf TaggedField) hash() string {
 	buffer := "tf"
 
 	if tf.FrameworkName != "" {
-		buffer += "_fr:" + tf.FrameworkName
+		buffer += "_fn:" + tf.FrameworkName
 	}
 	if tf.CallType != "" {
 		buffer += "_ct:" + tf.CallType

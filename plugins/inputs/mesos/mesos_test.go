@@ -17,6 +17,7 @@ import (
 	"github.com/influxdata/telegraf/internal"
 	"github.com/influxdata/telegraf/internal/tls"
 	"github.com/influxdata/telegraf/testutil"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -187,6 +188,8 @@ func generateMetrics() {
 		"allocator/mesos/allocation_run_latency_ms/p999",
 		"allocator/mesos/allocation_run_latency_ms/p9999",
 		"allocator/mesos/roles/*/shares/dominant",
+		// test case against hash collisions in TaggedFields
+		// e.g. framework_name=marathon and role_name=marathon
 		"allocator/mesos/roles/marathon/shares/dominant",
 		"allocator/mesos/event_queue_dispatches",
 		"allocator/mesos/offer_filters/roles/*/active",
@@ -497,6 +500,8 @@ func TestMesosMaster(t *testing.T) {
 
 	for i := 0; i < len(frameworkFields); i++ {
 		acc.AssertContainsTaggedFields(t, "mesos", frameworkFields[i], frameworkTags[i])
+		// Test that none of the other metrics share the same tags, which
+		// tests against potential hash collisions in TaggedFields.
 		for j := 0; j < len(frameworkFields); j++ {
 			if j == i {
 				continue
@@ -757,4 +762,60 @@ func TestCreateHTTPClient(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestTaggedFieldHash(t *testing.T) {
+	assert := assert.New(t)
+	tf := TaggedField{
+		FrameworkName: "marathon",
+		CallType:      "accept",
+		EventType:     "error",
+		OperationType: "create",
+		TaskState:     "active",
+		RoleName:      "marathon",
+		FieldName:     "field/name",
+		Resource:      "mem",
+		Value:         1.0,
+	}
+	assert.Equal("tf_fn:marathon_ct:accept_et:error_ot:create_ts:active_rn:marathon_r:mem", tf.hash())
+
+	// Test against hash collisions
+	tf1 := TaggedField{
+		FrameworkName: "marathon",
+		FieldName:     "field/name/1",
+		Value:         1.0,
+	}
+	tf2 := TaggedField{
+		RoleName:  "marathon",
+		FieldName: "field/name/2",
+		Value:     1.0,
+	}
+	assert.NotEqual(tf1.hash(), tf2.hash())
+}
+
+func TestTaggedFieldTags(t *testing.T) {
+	assert := assert.New(t)
+	tf := TaggedField{
+		FrameworkName: "marathon",
+		CallType:      "accept",
+		EventType:     "error",
+		OperationType: "create",
+		TaskState:     "active",
+		RoleName:      "marathon",
+		FieldName:     "field/name",
+		Resource:      "mem",
+		Value:         1.0,
+	}
+
+	expectedTags := fieldTags{
+		"framework_name": "marathon",
+		"call_type":      "accept",
+		"event_type":     "error",
+		"operation_type": "create",
+		"task_state":     "active",
+		"role_name":      "marathon",
+		"resource":       "mem",
+	}
+
+	assert.Equal(expectedTags, tf.tags())
 }
