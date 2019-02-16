@@ -830,7 +830,7 @@ func (s *Statsd) handler(conn *net.TCPConn, id string) {
 			case s.in <- b:
 			default:
 				s.drops++
-				if s.drops == 1 || s.drops%s.AllowedPendingMessages == 0 {
+				if s.drops == 1 || s.AllowedPendingMessages == 0 || s.drops%s.AllowedPendingMessages == 0 {
 					log.Printf(dropwarn, s.drops)
 				}
 			}
