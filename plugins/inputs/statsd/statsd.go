@@ -446,10 +446,7 @@ func (s *Statsd) udpListen() error {
 			select {
 			case s.in <- b:
 			default:
-				s.drops++
-				if s.drops == 1 || s.AllowedPendingMessages == 0 || s.drops%s.AllowedPendingMessages == 0 {
-					log.Printf(dropwarn, s.drops)
-				}
+				s.reportDroppedMessage()
 			}
 		}
 	}
@@ -829,10 +826,7 @@ func (s *Statsd) handler(conn *net.TCPConn, id string) {
 			select {
 			case s.in <- b:
 			default:
-				s.drops++
-				if s.drops == 1 || s.AllowedPendingMessages == 0 || s.drops%s.AllowedPendingMessages == 0 {
-					log.Printf(dropwarn, s.drops)
-				}
+				s.reportDroppedMessage()
 			}
 		}
 	}
@@ -858,6 +852,14 @@ func (s *Statsd) remember(id string, conn *net.TCPConn) {
 	s.cleanup.Lock()
 	defer s.cleanup.Unlock()
 	s.conns[id] = conn
+}
+
+// reportDroppedMessage() updates counters and logs when an incoming message is dropped due to a full buffer.
+func (s *Statsd) reportDroppedMessage() {
+	s.drops++
+	if s.drops == 1 || s.AllowedPendingMessages == 0 || s.drops%s.AllowedPendingMessages == 0 {
+		log.Printf(dropwarn, s.drops)
+	}
 }
 
 func (s *Statsd) Stop() {
