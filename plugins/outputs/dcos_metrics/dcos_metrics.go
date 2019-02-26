@@ -10,12 +10,14 @@ import (
 	httpProducer "github.com/dcos/dcos-metrics/producers/http"
 
 	"github.com/influxdata/telegraf"
+	"github.com/influxdata/telegraf/dcosutil"
 	"github.com/influxdata/telegraf/internal"
 	"github.com/influxdata/telegraf/plugins/outputs"
 )
 
 type DCOSMetrics struct {
 	Listen            string
+	SystemdSocketName string            `toml:"systemd_socket_name"`
 	CacheExpiry       internal.Duration `toml:"cache_expiry"`
 	MesosID           string            `toml:"mesos_id"`
 	DCOSNodeRole      string            `toml:"dcos_node_role"`
@@ -34,6 +36,9 @@ func (d *DCOSMetrics) SampleConfig() string {
 	return `
   # Address to listen on. Leave unset to listen on a systemd-provided socket.
   listen = ":8080"
+
+  # Systemd socket name to listen on. Leave unset to listen on a port.
+  #systemd_socket_name = "dcos-metrics.socket"
 
   # Duration to cache metrics in memory.
   cache_expiry = "2m"
@@ -94,6 +99,7 @@ func (d *DCOSMetrics) producerConfig() (httpProducer.Config, error) {
 		err        error
 		listenHost string
 		listenPort int
+		listener   net.Listener
 	)
 
 	if d.Listen != "" {
@@ -101,6 +107,19 @@ func (d *DCOSMetrics) producerConfig() (httpProducer.Config, error) {
 		if err != nil {
 			return httpProducer.Config{}, errors.New(fmt.Sprintf("error reading listen: %s", err))
 		}
+	}
+
+	if d.SystemdSocketName != "" {
+		listeners, err := dcosutil.ListenersWithNames()
+		if err != nil {
+			return httpProducer.Config{}, fmt.Errorf("error finding systemd socket: %s", err)
+		}
+
+		l, ok := listeners[d.SystemdSocketName]
+		if !ok || len(l) < 1 {
+			return httpProducer.Config{}, fmt.Errorf("systemd socket not found: %s", d.SystemdSocketName)
+		}
+		listener = l[0]
 	}
 
 	switch d.DCOSNodeRole {
@@ -114,6 +133,7 @@ func (d *DCOSMetrics) producerConfig() (httpProducer.Config, error) {
 		Port:        listenPort,
 		CacheExpiry: d.CacheExpiry.Duration,
 		DCOSRole:    d.DCOSNodeRole,
+		Listener:    listener,
 	}, nil
 }
 

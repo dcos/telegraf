@@ -10,6 +10,9 @@ The DC/OS Metrics output provides a [DC/OS Metrics API](https://docs.mesosphere.
   # Address to listen on. Leave unset to listen on a systemd-provided socket.
   listen = ":8080"
 
+  # Systemd socket name to listen on. Leave unset to listen on a port.
+  #systemd_socket_name = "dcos-metrics.socket"
+
   # Duration to cache metrics in memory.
   cache_expiry = "2m"
 
