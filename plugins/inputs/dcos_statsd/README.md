@@ -33,6 +33,8 @@ generate it using `telegraf --usage dcos_statsd`.
 [[inputs.dcos_statsd]]
   ## The address on which the command API should listen
   listen = "localhost:8888"
+  ## The name of the systemd socket on which the command API should listen. Leave unset to listen on an address.
+  #systemd_socket_name = "dcos-statsd.socket"
   ## The directory in which container information is persisted
   containers_dir = "/run/dcos/mesos/isolators/com_mesosphere_MetricsIsolatorModule/containers"
   ## The period after which requests to the API should time out

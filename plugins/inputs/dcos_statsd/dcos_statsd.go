@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/influxdata/telegraf"
+	"github.com/influxdata/telegraf/dcosutil"
 	"github.com/influxdata/telegraf/internal"
 	"github.com/influxdata/telegraf/plugins/inputs"
 	"github.com/influxdata/telegraf/plugins/inputs/dcos_statsd/api"
@@ -27,6 +28,8 @@ import (
 const sampleConfig = `
 ## The address on which the command API should listen
 listen = ":8888"
+## The name of the systemd socket on which the command API should listen. Leave unset to listen on an address.
+#systemd_socket_name = "dcos-statsd.socket"
 ## The directory in which container information is stored
 containers_dir = "/run/dcos/telegraf/dcos_statsd/containers"
 ## The period after which requests to the API should time out
@@ -38,7 +41,8 @@ statsd_host = "198.51.100.1"
 type DCOSStatsd struct {
 	// Listen is the address on which the command API listens. It can be a
 	// host:port pair, or the path to a unix socket
-	Listen string
+	Listen            string
+	SystemdSocketName string
 	// ContainersDir is the directory in which container information is stored
 	ContainersDir string
 	Timeout       internal.Duration
@@ -90,31 +94,51 @@ func (ds *DCOSStatsd) Start(acc telegraf.Accumulator) error {
 		log.Println("I! No containers_dir was set; state will not persist")
 	}
 
-	go func() {
-		if strings.Contains(ds.Listen, ":") {
-			err := ds.apiServer.ListenAndServe()
+	if ds.SystemdSocketName != "" {
+		// Listen on the socket from systemd that has the name we're configured to use.
+		listeners, err := dcosutil.ListenersWithNames()
+		if err != nil {
+			log.Fatalf("E! Could not find systemd socket: %s", err)
+		}
+		l, ok := listeners[ds.SystemdSocketName]
+		if !ok || len(l) < 1 {
+			log.Fatalf("E! Could not find systemd socket: %s", ds.SystemdSocketName)
+		}
+		ln := l[0]
+
+		go func() {
+			err := ds.apiServer.Serve(ln)
 			log.Printf("I! dcos_statsd API server closed: %s", err)
-		} else {
-			ln, err := net.Listen("unix", ds.Listen)
-			if err != nil {
-				// we use fatal advisedly; this plugin is useless if it can't run its
-				// command server
-				log.Fatalf("E! Could not listen on unix socket %s", ds.Listen)
+		}()
+		log.Printf("I! dcos_statsd API server listening on %s", ln.Addr().String())
+	} else {
+		// Use the listen param to decide where to listen.
+		go func() {
+			if strings.Contains(ds.Listen, ":") {
+				err := ds.apiServer.ListenAndServe()
+				log.Printf("I! dcos_statsd API server closed: %s", err)
+			} else {
+				ln, err := net.Listen("unix", ds.Listen)
+				if err != nil {
+					// we use fatal advisedly; this plugin is useless if it can't run its
+					// command server
+					log.Fatalf("E! Could not listen on unix socket %s", ds.Listen)
+				}
+
+				defer func() {
+					if r := recover(); r != nil {
+						ds.Stop()
+						log.Fatalf("dcos_statsd API server crashed unrecoverably: %v", r)
+					}
+				}()
+
+				err = ds.apiServer.Serve(ln)
+				log.Printf("I! dcos_statsd API server closed: %s", err)
 			}
 
-			defer func() {
-				if r := recover(); r != nil {
-					ds.Stop()
-					log.Fatalf("dcos_statsd API server crashed unrecoverably: %v", r)
-				}
-			}()
-
-			err = ds.apiServer.Serve(ln)
-			log.Printf("I! dcos_statsd API server closed: %s", err)
-		}
-
-	}()
-	log.Printf("I! dcos_statsd API server listening on %s", ds.Listen)
+		}()
+		log.Printf("I! dcos_statsd API server listening on %s", ds.Listen)
+	}
 
 	return nil
 }
