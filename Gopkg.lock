@@ -272,8 +272,7 @@
   revision = "0f9f3da35068c4b3cdc15e441f574d7c01beff13"
 
 [[projects]]
-  branch = "1.11.x"
-  digest = "1:d061734870c6f8f5553f6156faea85efc9395ab011ecdb42f554d3b0b83fe4f7"
+  digest = "1:eaf32f37baab0ff8618e50aebf594c210bfe41a26b3a96b9e522910b0a317253"
   name = "github.com/dcos/dcos-metrics"
   packages = [
     "producers",
@@ -281,7 +280,7 @@
     "util/producers",
   ]
   pruneopts = ""
-  revision = "d9a66c43278f20a33342a090252b559fa7022a67"
+  revision = "7d64a97637d3cc5cd34db0a5cc575f13af7129b5"
 
 [[projects]]
   branch = "master"
