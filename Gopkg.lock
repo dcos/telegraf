@@ -1543,6 +1543,7 @@
     "github.com/aws/aws-sdk-go/service/cloudwatch",
     "github.com/aws/aws-sdk-go/service/kinesis",
     "github.com/bsm/sarama-cluster",
+    "github.com/coreos/go-systemd/activation",
     "github.com/couchbase/go-couchbase",
     "github.com/dcos/dcos-go/dcos",
     "github.com/dcos/dcos-go/dcos/http/transport",

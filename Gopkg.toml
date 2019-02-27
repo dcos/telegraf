@@ -257,3 +257,7 @@
 [[constraint]]
   branch = "master"
   name = "github.com/dcos/dcos-go"
+
+[[constraint]]
+  name = "github.com/coreos/go-systemd"
+  version = "18.0.0"
