@@ -8,8 +8,8 @@ in Prometheus format.
 ```toml
 # Read metrics from one or many prometheus clients
 [[inputs.adminrouter]]
-  ## An array of urls to scrape metrics from.
-  urls = ["http://localhost:9100/metrics"]
+  ## An array of Prometheus client URLs to scrape metrics from.
+  prometheus_endpoints = ["http://localhost:9100/metrics"]
 
   ## Specify timeout duration for slower prometheus clients (default is 3s)
   # response_timeout = "3s"

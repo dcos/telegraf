@@ -20,8 +20,8 @@ import (
 const acceptHeader = `application/vnd.google.protobuf;proto=io.prometheus.client.MetricFamily;encoding=delimited;q=0.7,text/plain;version=0.0.4;q=0.3`
 
 type AdminRouter struct {
-	// An array of urls to scrape metrics from.
-	URLs []string `toml:"urls"`
+	// URL strings of Prometheus endpoints
+	PrometheusEndpoints []string `toml:"prometheus_endpoints"`
 
 	ResponseTimeout internal.Duration `toml:"response_timeout"`
 
@@ -32,7 +32,7 @@ type AdminRouter struct {
 
 var sampleConfig = `
   ## An array of urls to scrape metrics from.
-  urls = ["http://localhost:9100/metrics"]
+  prometheus_endpoints = ["http://localhost:9100/metrics"]
 
   ## Specify timeout duration for slower prometheus clients (default is 3s)
   # response_timeout = "3s"
@@ -55,7 +55,7 @@ func (p *AdminRouter) Description() string {
 
 var ErrProtocolError = errors.New("prometheus protocol error")
 
-func (p *AdminRouter) AddressToURL(u *url.URL, address string) *url.URL {
+func (a *AdminRouter) AddressToURL(u *url.URL, address string) *url.URL {
 	host := address
 	if u.Port() != "" {
 		host = address + ":" + u.Port()
@@ -74,53 +74,40 @@ func (p *AdminRouter) AddressToURL(u *url.URL, address string) *url.URL {
 	return reconstructedURL
 }
 
-type URLAndAddress struct {
-	OriginalURL *url.URL
-	URL         *url.URL
-	Address     string
-	Tags        map[string]string
-}
-
-func (p *AdminRouter) GetAllURLs() (map[string]URLAndAddress, error) {
-	allURLs := make(map[string]URLAndAddress, 0)
-	for _, u := range p.URLs {
-		URL, err := url.Parse(u)
+func (a *AdminRouter) PrometheusEndpointURLs() ([]*url.URL, error) {
+	promURLs := make([]*url.URL, 0)
+	for _, u := range a.PrometheusEndpoints {
+		u, err := url.Parse(u)
 		if err != nil {
 			log.Printf("prometheus: Could not parse %s, skipping it. Error: %s", u, err.Error())
 			continue
 		}
-		allURLs[URL.String()] = URLAndAddress{URL: URL, OriginalURL: URL}
+		promURLs = append(promURLs, u)
 	}
-	return allURLs, nil
+	return promURLs, nil
 }
 
-// Reads stats from all configured servers accumulates stats.
-// Returns one of the errors encountered while gather stats (if any).
-func (p *AdminRouter) Gather(acc telegraf.Accumulator) error {
-	if p.client == nil {
-		client, err := p.createHTTPClient()
+func (a *AdminRouter) Gather(acc telegraf.Accumulator) error {
+	if a.client == nil {
+		client, err := a.createHTTPClient()
 		if err != nil {
 			return err
 		}
-		p.client = client
+		a.client = client
 	}
-
 	var wg sync.WaitGroup
-
-	allURLs, err := p.GetAllURLs()
+	promURLs, err := a.PrometheusEndpointURLs()
 	if err != nil {
 		return err
 	}
-	for _, URL := range allURLs {
+	for _, u := range promURLs {
 		wg.Add(1)
-		go func(serviceURL URLAndAddress) {
+		go func(u *url.URL) {
 			defer wg.Done()
-			acc.AddError(p.gatherURL(serviceURL, acc))
-		}(URL)
+			acc.AddError(a.scrapePrometheus(u, acc))
+		}(u)
 	}
-
 	wg.Wait()
-
 	return nil
 }
 
@@ -129,7 +116,6 @@ func (p *AdminRouter) createHTTPClient() (*http.Client, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	client := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig:   tlsCfg,
@@ -137,16 +123,15 @@ func (p *AdminRouter) createHTTPClient() (*http.Client, error) {
 		},
 		Timeout: p.ResponseTimeout.Duration,
 	}
-
 	return client, nil
 }
 
-func (p *AdminRouter) gatherURL(u URLAndAddress, acc telegraf.Accumulator) error {
+func (p *AdminRouter) scrapePrometheus(u *url.URL, acc telegraf.Accumulator) error {
 	var req *http.Request
 	var err error
 	var uClient *http.Client
-	if u.URL.Scheme == "unix" {
-		path := u.URL.Query().Get("path")
+	if u.Scheme == "unix" {
+		path := u.Query().Get("path")
 		if path == "" {
 			path = "/metrics"
 		}
@@ -159,73 +144,55 @@ func (p *AdminRouter) gatherURL(u URLAndAddress, acc telegraf.Accumulator) error
 				TLSClientConfig:   tlsCfg,
 				DisableKeepAlives: true,
 				Dial: func(network, addr string) (net.Conn, error) {
-					c, err := net.Dial("unix", u.URL.Path)
+					c, err := net.Dial("unix", u.Path)
 					return c, err
 				},
 			},
 			Timeout: p.ResponseTimeout.Duration,
 		}
 	} else {
-		if u.URL.Path == "" {
-			u.URL.Path = "/metrics"
+		if u.Path == "" {
+			u.Path = "/metrics"
 		}
-		req, err = http.NewRequest("GET", u.URL.String(), nil)
+		req, err = http.NewRequest("GET", u.String(), nil)
 	}
-
 	req.Header.Add("Accept", acceptHeader)
-
 	var resp *http.Response
-	if u.URL.Scheme != "unix" {
+	if u.Scheme != "unix" {
 		resp, err = p.client.Do(req)
 	} else {
 		resp, err = uClient.Do(req)
 	}
 	if err != nil {
-		return fmt.Errorf("error making HTTP request to %s: %s", u.URL, err)
+		return fmt.Errorf("error making HTTP request to %s: %s", u, err)
 	}
 	defer resp.Body.Close()
-
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("%s returned HTTP status %s", u.URL, resp.Status)
+		return fmt.Errorf("%s returned HTTP status %s", u, resp.Status)
 	}
-
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return fmt.Errorf("error reading body: %s", err)
 	}
-
 	metrics, err := Parse(body, resp.Header)
 	if err != nil {
 		return fmt.Errorf("error reading metrics for %s: %s",
-			u.URL, err)
+			u, err)
 	}
-
 	for _, metric := range metrics {
-		tags := metric.Tags()
-		// strip user and password from URL
-		u.OriginalURL.User = nil
-		tags["url"] = u.OriginalURL.String()
-		if u.Address != "" {
-			tags["address"] = u.Address
-		}
-		for k, v := range u.Tags {
-			tags[k] = v
-		}
-
 		switch metric.Type() {
 		case telegraf.Counter:
-			acc.AddCounter(metric.Name(), metric.Fields(), tags, metric.Time())
+			acc.AddCounter(metric.Name(), metric.Fields(), metric.Tags(), metric.Time())
 		case telegraf.Gauge:
-			acc.AddGauge(metric.Name(), metric.Fields(), tags, metric.Time())
+			acc.AddGauge(metric.Name(), metric.Fields(), metric.Tags(), metric.Time())
 		case telegraf.Summary:
-			acc.AddSummary(metric.Name(), metric.Fields(), tags, metric.Time())
+			acc.AddSummary(metric.Name(), metric.Fields(), metric.Tags(), metric.Time())
 		case telegraf.Histogram:
-			acc.AddHistogram(metric.Name(), metric.Fields(), tags, metric.Time())
+			acc.AddHistogram(metric.Name(), metric.Fields(), metric.Tags(), metric.Time())
 		default:
-			acc.AddFields(metric.Name(), metric.Fields(), tags, metric.Time())
+			acc.AddFields(metric.Name(), metric.Fields(), metric.Tags(), metric.Time())
 		}
 	}
-
 	return nil
 }
 
