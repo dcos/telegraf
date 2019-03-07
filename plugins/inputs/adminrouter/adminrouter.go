@@ -1,7 +1,6 @@
 package adminrouter
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -24,49 +23,16 @@ type AdminRouter struct {
 	// An array of urls to scrape metrics from.
 	URLs []string `toml:"urls"`
 
-	// An array of Kubernetes services to scrape metrics from.
-	KubernetesServices []string
-
-	// Location of kubernetes config file
-	KubeConfig string
-
-	// Bearer Token authorization file path
-	BearerToken string `toml:"bearer_token"`
-
 	ResponseTimeout internal.Duration `toml:"response_timeout"`
 
 	tls.ClientConfig
 
 	client *http.Client
-
-	// Should we scrape Kubernetes services for prometheus annotations
-	MonitorPods    bool `toml:"monitor_kubernetes_pods"`
-	lock           sync.Mutex
-	kubernetesPods map[string]URLAndAddress
-	cancel         context.CancelFunc
-	wg             sync.WaitGroup
 }
 
 var sampleConfig = `
   ## An array of urls to scrape metrics from.
   urls = ["http://localhost:9100/metrics"]
-
-  ## An array of Kubernetes services to scrape metrics from.
-  # kubernetes_services = ["http://my-service-dns.my-namespace:9100/metrics"]
-
-  ## Kubernetes config file to create client from.
-  # kube_config = "/path/to/kubernetes.config"
-
-  ## Scrape Kubernetes pods for the following prometheus annotations:
-  ## - prometheus.io/scrape: Enable scraping for this pod
-  ## - prometheus.io/scheme: If the metrics endpoint is secured then you will need to
-  ##     set this to 'https' & most likely set the tls config.
-  ## - prometheus.io/path: If the metrics path is not /metrics, define it with this annotation.
-  ## - prometheus.io/port: If port is not 9102 use this annotation
-  # monitor_kubernetes_pods = true
-
-  ## Use bearer token for authorization
-  # bearer_token = /path/to/bearer/token
 
   ## Specify timeout duration for slower prometheus clients (default is 3s)
   # response_timeout = "3s"
@@ -124,34 +90,6 @@ func (p *AdminRouter) GetAllURLs() (map[string]URLAndAddress, error) {
 			continue
 		}
 		allURLs[URL.String()] = URLAndAddress{URL: URL, OriginalURL: URL}
-	}
-
-	p.lock.Lock()
-	defer p.lock.Unlock()
-	// loop through all pods scraped via the prometheus annotation on the pods
-	for k, v := range p.kubernetesPods {
-		allURLs[k] = v
-	}
-
-	for _, service := range p.KubernetesServices {
-		URL, err := url.Parse(service)
-		if err != nil {
-			return nil, err
-		}
-
-		resolvedAddresses, err := net.LookupHost(URL.Hostname())
-		if err != nil {
-			log.Printf("adminrouter: Could not resolve %s, skipping it. Error: %s", URL.Host, err.Error())
-			continue
-		}
-		for _, resolved := range resolvedAddresses {
-			serviceURL := p.AddressToURL(URL, resolved)
-			allURLs[serviceURL.String()] = URLAndAddress{
-				URL:         serviceURL,
-				Address:     resolved,
-				OriginalURL: URL,
-			}
-		}
 	}
 	return allURLs, nil
 }
@@ -236,15 +174,6 @@ func (p *AdminRouter) gatherURL(u URLAndAddress, acc telegraf.Accumulator) error
 
 	req.Header.Add("Accept", acceptHeader)
 
-	var token []byte
-	if p.BearerToken != "" {
-		token, err = ioutil.ReadFile(p.BearerToken)
-		if err != nil {
-			return err
-		}
-		req.Header.Set("Authorization", "Bearer "+string(token))
-	}
-
 	var resp *http.Response
 	if u.URL.Scheme != "unix" {
 		resp, err = p.client.Do(req)
@@ -300,28 +229,10 @@ func (p *AdminRouter) gatherURL(u URLAndAddress, acc telegraf.Accumulator) error
 	return nil
 }
 
-// Start will start the Kubernetes scraping if enabled in the configuration
-func (p *AdminRouter) Start(a telegraf.Accumulator) error {
-	if p.MonitorPods {
-		var ctx context.Context
-		ctx, p.cancel = context.WithCancel(context.Background())
-		return p.start(ctx)
-	}
-	return nil
-}
-
-func (p *AdminRouter) Stop() {
-	if p.MonitorPods {
-		p.cancel()
-	}
-	p.wg.Wait()
-}
-
 func init() {
 	inputs.Add("adminrouter", func() telegraf.Input {
 		return &AdminRouter{
 			ResponseTimeout: internal.Duration{Duration: time.Second * 3},
-			kubernetesPods:  map[string]URLAndAddress{},
 		}
 	})
 }
