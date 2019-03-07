@@ -1,4 +1,4 @@
-package prometheus
+package adminrouter
 
 // Parser inspired from
 // https://github.com/prometheus/prom2json/blob/master/main.go

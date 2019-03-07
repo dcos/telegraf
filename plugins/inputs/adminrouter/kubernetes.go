@@ -1,4 +1,4 @@
-package prometheus
+package adminrouter
 
 import (
 	"context"
@@ -38,7 +38,7 @@ func loadClient(kubeconfigPath string) (*k8s.Client, error) {
 	return k8s.NewClient(&config)
 }
 
-func (p *Prometheus) start(ctx context.Context) error {
+func (p *AdminRouter) start(ctx context.Context) error {
 	client, err := k8s.NewInClusterClient()
 	if err != nil {
 		u, err := user.Current()
@@ -68,7 +68,7 @@ func (p *Prometheus) start(ctx context.Context) error {
 			case <-time.After(time.Second):
 				err := p.watch(ctx, client)
 				if err != nil {
-					log.Printf("E! [inputs.prometheus] unable to watch resources: %v", err)
+					log.Printf("E! [inputs.adminrouter] unable to watch resources: %v", err)
 				}
 			}
 		}
@@ -81,7 +81,7 @@ func (p *Prometheus) start(ctx context.Context) error {
 // (without the scrape annotations). K8s may re-assign the old pod ip to the non-scrape
 // pod, causing errors in the logs. This is only true if the pod going offline is not
 // directed to do so by K8s.
-func (p *Prometheus) watch(ctx context.Context, client *k8s.Client) error {
+func (p *AdminRouter) watch(ctx context.Context, client *k8s.Client) error {
 	pod := &corev1.Pod{}
 	watcher, err := client.Watch(ctx, "", &corev1.Pod{})
 	if err != nil {
@@ -135,7 +135,7 @@ func podReady(statuss []*corev1.ContainerStatus) bool {
 	return true
 }
 
-func registerPod(pod *corev1.Pod, p *Prometheus) {
+func registerPod(pod *corev1.Pod, p *AdminRouter) {
 	if p.kubernetesPods == nil {
 		p.kubernetesPods = map[string]URLAndAddress{}
 	}
@@ -144,7 +144,7 @@ func registerPod(pod *corev1.Pod, p *Prometheus) {
 		return
 	}
 
-	log.Printf("D! [inputs.prometheus] will scrape metrics from %s", *targetURL)
+	log.Printf("D! [inputs.adminrouter] will scrape metrics from %s", *targetURL)
 	// add annotation as metrics tags
 	tags := pod.GetMetadata().GetAnnotations()
 	if tags == nil {
@@ -158,7 +158,7 @@ func registerPod(pod *corev1.Pod, p *Prometheus) {
 	}
 	URL, err := url.Parse(*targetURL)
 	if err != nil {
-		log.Printf("E! [inputs.prometheus] could not parse URL %s: %v", *targetURL, err)
+		log.Printf("E! [inputs.adminrouter] could not parse URL %s: %v", *targetURL, err)
 		return
 	}
 	podURL := p.AddressToURL(URL, URL.Hostname())
@@ -205,19 +205,19 @@ func getScrapeURL(pod *corev1.Pod) *string {
 	return &x
 }
 
-func unregisterPod(pod *corev1.Pod, p *Prometheus) {
+func unregisterPod(pod *corev1.Pod, p *AdminRouter) {
 	url := getScrapeURL(pod)
 	if url == nil {
 		return
 	}
 
-	log.Printf("D! [inputs.prometheus] registered a delete request for %s in namespace %s",
+	log.Printf("D! [inputs.adminrouter] registered a delete request for %s in namespace %s",
 		pod.GetMetadata().GetName(), pod.GetMetadata().GetNamespace())
 
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	if _, ok := p.kubernetesPods[*url]; ok {
 		delete(p.kubernetesPods, *url)
-		log.Printf("D! [inputs.prometheus] will stop scraping for %s", *url)
+		log.Printf("D! [inputs.adminrouter] will stop scraping for %s", *url)
 	}
 }

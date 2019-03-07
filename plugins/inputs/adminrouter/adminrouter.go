@@ -1,4 +1,4 @@
-package prometheus
+package adminrouter
 
 import (
 	"context"
@@ -20,7 +20,7 @@ import (
 
 const acceptHeader = `application/vnd.google.protobuf;proto=io.prometheus.client.MetricFamily;encoding=delimited;q=0.7,text/plain;version=0.0.4;q=0.3`
 
-type Prometheus struct {
+type AdminRouter struct {
 	// An array of urls to scrape metrics from.
 	URLs []string `toml:"urls"`
 
@@ -79,17 +79,17 @@ var sampleConfig = `
   # insecure_skip_verify = false
 `
 
-func (p *Prometheus) SampleConfig() string {
+func (p *AdminRouter) SampleConfig() string {
 	return sampleConfig
 }
 
-func (p *Prometheus) Description() string {
+func (p *AdminRouter) Description() string {
 	return "Read metrics from one or many prometheus clients"
 }
 
 var ErrProtocolError = errors.New("prometheus protocol error")
 
-func (p *Prometheus) AddressToURL(u *url.URL, address string) *url.URL {
+func (p *AdminRouter) AddressToURL(u *url.URL, address string) *url.URL {
 	host := address
 	if u.Port() != "" {
 		host = address + ":" + u.Port()
@@ -115,7 +115,7 @@ type URLAndAddress struct {
 	Tags        map[string]string
 }
 
-func (p *Prometheus) GetAllURLs() (map[string]URLAndAddress, error) {
+func (p *AdminRouter) GetAllURLs() (map[string]URLAndAddress, error) {
 	allURLs := make(map[string]URLAndAddress, 0)
 	for _, u := range p.URLs {
 		URL, err := url.Parse(u)
@@ -141,7 +141,7 @@ func (p *Prometheus) GetAllURLs() (map[string]URLAndAddress, error) {
 
 		resolvedAddresses, err := net.LookupHost(URL.Hostname())
 		if err != nil {
-			log.Printf("prometheus: Could not resolve %s, skipping it. Error: %s", URL.Host, err.Error())
+			log.Printf("adminrouter: Could not resolve %s, skipping it. Error: %s", URL.Host, err.Error())
 			continue
 		}
 		for _, resolved := range resolvedAddresses {
@@ -158,7 +158,7 @@ func (p *Prometheus) GetAllURLs() (map[string]URLAndAddress, error) {
 
 // Reads stats from all configured servers accumulates stats.
 // Returns one of the errors encountered while gather stats (if any).
-func (p *Prometheus) Gather(acc telegraf.Accumulator) error {
+func (p *AdminRouter) Gather(acc telegraf.Accumulator) error {
 	if p.client == nil {
 		client, err := p.createHTTPClient()
 		if err != nil {
@@ -186,7 +186,7 @@ func (p *Prometheus) Gather(acc telegraf.Accumulator) error {
 	return nil
 }
 
-func (p *Prometheus) createHTTPClient() (*http.Client, error) {
+func (p *AdminRouter) createHTTPClient() (*http.Client, error) {
 	tlsCfg, err := p.ClientConfig.TLSConfig()
 	if err != nil {
 		return nil, err
@@ -203,7 +203,7 @@ func (p *Prometheus) createHTTPClient() (*http.Client, error) {
 	return client, nil
 }
 
-func (p *Prometheus) gatherURL(u URLAndAddress, acc telegraf.Accumulator) error {
+func (p *AdminRouter) gatherURL(u URLAndAddress, acc telegraf.Accumulator) error {
 	var req *http.Request
 	var err error
 	var uClient *http.Client
@@ -301,7 +301,7 @@ func (p *Prometheus) gatherURL(u URLAndAddress, acc telegraf.Accumulator) error 
 }
 
 // Start will start the Kubernetes scraping if enabled in the configuration
-func (p *Prometheus) Start(a telegraf.Accumulator) error {
+func (p *AdminRouter) Start(a telegraf.Accumulator) error {
 	if p.MonitorPods {
 		var ctx context.Context
 		ctx, p.cancel = context.WithCancel(context.Background())
@@ -310,7 +310,7 @@ func (p *Prometheus) Start(a telegraf.Accumulator) error {
 	return nil
 }
 
-func (p *Prometheus) Stop() {
+func (p *AdminRouter) Stop() {
 	if p.MonitorPods {
 		p.cancel()
 	}
@@ -318,8 +318,8 @@ func (p *Prometheus) Stop() {
 }
 
 func init() {
-	inputs.Add("prometheus", func() telegraf.Input {
-		return &Prometheus{
+	inputs.Add("adminrouter", func() telegraf.Input {
+		return &AdminRouter{
 			ResponseTimeout: internal.Duration{Duration: time.Second * 3},
 			kubernetesPods:  map[string]URLAndAddress{},
 		}

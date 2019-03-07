@@ -1,4 +1,4 @@
-package prometheus
+package adminrouter
 
 import (
 	"fmt"
@@ -30,13 +30,13 @@ go_goroutines 15
 test_metric{label="value"} 1.0 1490802350000
 `
 
-func TestPrometheusGeneratesMetrics(t *testing.T) {
+func TestAdminRouterGeneratesMetrics(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, sampleTextFormat)
 	}))
 	defer ts.Close()
 
-	p := &Prometheus{
+	p := &AdminRouter{
 		URLs: []string{ts.URL},
 	}
 
@@ -53,13 +53,13 @@ func TestPrometheusGeneratesMetrics(t *testing.T) {
 	assert.True(t, acc.TagValue("test_metric", "url") == ts.URL+"/metrics")
 }
 
-func TestPrometheusGeneratesMetricsWithHostNameTag(t *testing.T) {
+func TestAdminRouterGeneratesMetricsWithHostNameTag(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, sampleTextFormat)
 	}))
 	defer ts.Close()
 
-	p := &Prometheus{
+	p := &AdminRouter{
 		KubernetesServices: []string{ts.URL},
 	}
 	u, _ := url.Parse(ts.URL)
@@ -78,7 +78,7 @@ func TestPrometheusGeneratesMetricsWithHostNameTag(t *testing.T) {
 	assert.True(t, acc.TagValue("test_metric", "url") == ts.URL)
 }
 
-func TestPrometheusGeneratesMetricsAlthoughFirstDNSFails(t *testing.T) {
+func TestAdminRouterGeneratesMetricsAlthoughFirstDNSFails(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping integration test in short mode")
 	}
@@ -88,7 +88,7 @@ func TestPrometheusGeneratesMetricsAlthoughFirstDNSFails(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	p := &Prometheus{
+	p := &AdminRouter{
 		URLs:               []string{ts.URL},
 		KubernetesServices: []string{"http://random.telegraf.local:88/metrics"},
 	}

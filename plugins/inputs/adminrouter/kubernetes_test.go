@@ -1,4 +1,4 @@
-package prometheus
+package adminrouter
 
 import (
 	"testing"
@@ -53,45 +53,45 @@ func TestScrapeURLAnnotationsCustomPathWithSep(t *testing.T) {
 }
 
 func TestAddPod(t *testing.T) {
-	prom := &Prometheus{}
+	ar := &AdminRouter{}
 
 	p := pod()
 	p.Metadata.Annotations = map[string]string{"prometheus.io/scrape": "true"}
-	registerPod(p, prom)
-	assert.Equal(t, 1, len(prom.kubernetesPods))
+	registerPod(p, ar)
+	assert.Equal(t, 1, len(ar.kubernetesPods))
 }
 
 func TestAddMultipleDuplicatePods(t *testing.T) {
-	prom := &Prometheus{}
+	ar := &AdminRouter{}
 
 	p := pod()
 	p.Metadata.Annotations = map[string]string{"prometheus.io/scrape": "true"}
-	registerPod(p, prom)
+	registerPod(p, ar)
 	p.Metadata.Name = str("Pod2")
-	registerPod(p, prom)
-	assert.Equal(t, 1, len(prom.kubernetesPods))
+	registerPod(p, ar)
+	assert.Equal(t, 1, len(ar.kubernetesPods))
 }
 
 func TestAddMultiplePods(t *testing.T) {
-	prom := &Prometheus{}
+	ar := &AdminRouter{}
 
 	p := pod()
 	p.Metadata.Annotations = map[string]string{"prometheus.io/scrape": "true"}
-	registerPod(p, prom)
+	registerPod(p, ar)
 	p.Metadata.Name = str("Pod2")
 	p.Status.PodIP = str("127.0.0.2")
-	registerPod(p, prom)
-	assert.Equal(t, 2, len(prom.kubernetesPods))
+	registerPod(p, ar)
+	assert.Equal(t, 2, len(ar.kubernetesPods))
 }
 
 func TestDeletePods(t *testing.T) {
-	prom := &Prometheus{}
+	ar := &AdminRouter{}
 
 	p := pod()
 	p.Metadata.Annotations = map[string]string{"prometheus.io/scrape": "true"}
-	registerPod(p, prom)
-	unregisterPod(p, prom)
-	assert.Equal(t, 0, len(prom.kubernetesPods))
+	registerPod(p, ar)
+	unregisterPod(p, ar)
+	assert.Equal(t, 0, len(ar.kubernetesPods))
 }
 
 func pod() *v1.Pod {
