@@ -5,6 +5,7 @@ import (
 	_ "github.com/influxdata/telegraf/plugins/processors/dcos_metadata"
 	_ "github.com/influxdata/telegraf/plugins/processors/enum"
 	_ "github.com/influxdata/telegraf/plugins/processors/lowercase"
+	_ "github.com/influxdata/telegraf/plugins/processors/nginx_vts_filter"
 	_ "github.com/influxdata/telegraf/plugins/processors/override"
 	_ "github.com/influxdata/telegraf/plugins/processors/parser"
 	_ "github.com/influxdata/telegraf/plugins/processors/printer"
