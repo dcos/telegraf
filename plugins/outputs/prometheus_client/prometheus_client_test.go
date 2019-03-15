@@ -191,12 +191,24 @@ func TestWrite_Sanitize(t *testing.T) {
 		map[string]interface{}{"field-with-dash": 42},
 		time.Now(),
 		telegraf.Counter)
-	err = client.Write([]telegraf.Metric{p1})
+	p2, err := metric.New(
+		"123.foo",
+		map[string]string{},
+		map[string]interface{}{"value": 42},
+		time.Now(),
+		telegraf.Counter)
+
+	err = client.Write([]telegraf.Metric{p1, p2})
 	require.NoError(t, err)
 
 	fam, ok := client.fam["foo_bar_field_with_dash"]
 	require.True(t, ok)
 	require.Equal(t, map[string]int{"tag_with_dash": 1}, fam.LabelSet)
+
+	// check that 123.foo was prefixed with an underscore;
+	// prometheus metrics may not start with a numeric digit
+	_, ok = client.fam["_123_foo"]
+	require.True(t, ok)
 
 	sample1, ok := fam.Samples[CreateSampleID(p1.Tags())]
 	require.True(t, ok)

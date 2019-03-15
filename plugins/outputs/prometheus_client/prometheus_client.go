@@ -288,6 +288,12 @@ func (p *PrometheusClient) Collect(ch chan<- prometheus.Metric) {
 }
 
 func sanitize(value string) string {
+	// numeric chars are legal, except at the start of a metric name
+	// if the metric name starts with a number, prefix with underscore
+	c := value[0]
+	if c >= '0' && c <= '9' {
+		value = "_" + value
+	}
 	return invalidNameCharRE.ReplaceAllString(value, "_")
 }
 
