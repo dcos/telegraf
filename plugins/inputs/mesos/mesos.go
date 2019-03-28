@@ -9,7 +9,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -211,8 +210,6 @@ func (m *Mesos) initialize() error {
 		m.Timeout = 100
 	}
 
-	rawQuery := "timeout=" + strconv.Itoa(m.Timeout) + "ms"
-
 	m.masterURLs = make([]*url.URL, 0, len(m.Masters))
 	for _, master := range m.Masters {
 		u, err := parseURL(master, MASTER)
@@ -220,7 +217,6 @@ func (m *Mesos) initialize() error {
 			return err
 		}
 
-		u.RawQuery = rawQuery
 		m.masterURLs = append(m.masterURLs, u)
 	}
 
@@ -231,7 +227,6 @@ func (m *Mesos) initialize() error {
 			return err
 		}
 
-		u.RawQuery = rawQuery
 		m.slaveURLs = append(m.slaveURLs, u)
 	}
 
@@ -309,7 +304,7 @@ func (m *Mesos) createHttpClient() (*http.Client, error) {
 				TLSClientConfig: tlsCfg,
 			},
 			m.UserAgent),
-		Timeout: 4 * time.Second,
+		Timeout: time.Duration(m.Timeout) * time.Millisecond,
 	}
 
 	if m.CACertificatePath != "" {
