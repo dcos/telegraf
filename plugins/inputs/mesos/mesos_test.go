@@ -12,6 +12,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/influxdata/telegraf/dcosutil"
 	"github.com/influxdata/telegraf/internal"
@@ -639,11 +640,16 @@ type testCase struct {
 	tlsConfig            tls.ClientConfig
 	dcosConfig           dcosutil.DCOSConfig
 	header, expHeaderVal string
+	timeout              int
 	expClientErr         error
 }
 
 var (
 	TEST_CASES = []testCase{
+		{
+			fixture: "Configured client timeout",
+			timeout: 30000,
+		},
 		{
 			fixture:      "Default user-agent header",
 			header:       "User-Agent",
@@ -732,12 +738,17 @@ func TestCreateHTTPClient(t *testing.T) {
 			m := Mesos{
 				ClientConfig: tc.tlsConfig,
 				DCOSConfig:   tc.dcosConfig,
+				Timeout:      tc.timeout,
 			}
 			client, err := m.createHttpClient()
 			require.Equal(tc.expClientErr, err)
 			if err == nil {
 				require.NotNil(client)
 				require.NotNil(client.Transport)
+			}
+
+			if tc.timeout != 0 {
+				require.Equal(time.Duration(tc.timeout)*time.Millisecond, client.Timeout)
 			}
 
 			if tc.header != "" {
