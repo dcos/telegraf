@@ -11,6 +11,9 @@ container via the standard `STATSD_UDP_HOST` and `STATSD_UDP_PORT` environment v
 The metrics received on this server are annotated with the task name and retransmitted to the
 [statsd plugin](../statsd). 
 
+When a task finishes, any metrics it reported that haven't yet been gathered by Telegraf will be discarded. Tasks that
+live for a duration shorter than the configured `interval` for this input may not have their metrics gathered.
+
 Sample marathon app configuration:
 
 ```
