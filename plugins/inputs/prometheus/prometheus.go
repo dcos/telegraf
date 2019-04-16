@@ -61,7 +61,8 @@ type Prometheus struct {
 	cancel         context.CancelFunc
 	wg             sync.WaitGroup
 
-	mesosClient *httpcli.Client
+	mesosClient   *httpcli.Client
+	mesosHostname string
 }
 
 var sampleConfig = `
@@ -201,15 +202,7 @@ func (p *Prometheus) GetAllURLs() (map[string]URLAndAddress, error) {
 			return allURLs, err
 		}
 
-		u, uerr := url.Parse(p.MesosAgentUrl)
-		hostname, _, serr := net.SplitHostPort(u.Host)
-		if uerr != nil || serr != nil {
-			log.Printf("E! could not retrieve hostname from mesos agent url: %s %s", uerr, serr)
-			log.Printf("W! mesos task prometheus metrics will be pulled from 'localhost'")
-			hostname = "localhost"
-		}
-
-		for _, url := range getMesosTaskPrometheusURLs(tasks, hostname) {
+		for _, url := range getMesosTaskPrometheusURLs(tasks, p.mesosHostname) {
 			allURLs[url.URL.String()] = url
 		}
 	}
@@ -363,6 +356,15 @@ func (p *Prometheus) gatherURL(u URLAndAddress, acc telegraf.Accumulator) error 
 
 // Start will start the Kubernetes scraping if enabled in the configuration
 func (p *Prometheus) Start(a telegraf.Accumulator) error {
+	// Check that the mesos agent url is well-formed
+	if p.MesosAgentUrl != "" {
+		// gofmt prevents us using := assignment below, hence declaration
+		var err error
+		p.mesosHostname, err = getMesosHostname(p.MesosAgentUrl)
+		if err != nil {
+			return fmt.Errorf("the mesos agent URL was malformed: %s", err)
+		}
+	}
 	if p.MonitorPods {
 		var ctx context.Context
 		ctx, p.cancel = context.WithCancel(context.Background())
