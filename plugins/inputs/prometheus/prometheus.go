@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -375,6 +376,24 @@ func (p *Prometheus) Stop() {
 		p.cancel()
 	}
 	p.wg.Wait()
+}
+
+// getMesosHostname extracts the node's hostname from the mesos agent url
+func getMesosHostname(mesosAgentUrl string) (string, error) {
+	u, err := url.Parse(mesosAgentUrl)
+	if err != nil {
+		return "", err
+	}
+	hostname := u.Host
+
+	// SplitHostPort will error if passed an input with no port
+	if strings.ContainsRune(hostname, ':') {
+		hostname, _, err = net.SplitHostPort(hostname)
+	}
+	if hostname == "" {
+		return hostname, fmt.Errorf("could not extract hostname from: %s", mesosAgentUrl)
+	}
+	return hostname, err
 }
 
 // getMesosClient returns an httpcli client configured with the available levels of
