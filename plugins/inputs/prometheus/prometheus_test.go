@@ -106,8 +106,9 @@ func TestPrometheusGeneratesMetricsAlthoughFirstDNSFails(t *testing.T) {
 }
 
 func TestPrometheusGathersMesosMetrics(t *testing.T) {
-	metricsUrl, _ := url.Parse("http://localhost:12345/metrics")
-	federateUrl, _ := url.Parse("http://localhost:12345/federate")
+	// The mock mesos server listens on 127.0.0.1
+	metricsUrl, _ := url.Parse("http://127.0.0.1:12345/metrics")
+	federateUrl, _ := url.Parse("http://127.0.0.1:12345/federate")
 	testCases := map[string]map[string]URLAndAddress{
 		"empty": {},
 		"portlabel": {

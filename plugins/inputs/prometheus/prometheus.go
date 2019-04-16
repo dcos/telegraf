@@ -200,7 +200,15 @@ func (p *Prometheus) GetAllURLs() (map[string]URLAndAddress, error) {
 			return allURLs, err
 		}
 
-		for _, url := range getMesosTaskPrometheusURLs(tasks) {
+		u, uerr := url.Parse(p.MesosAgentUrl)
+		hostname, _, serr := net.SplitHostPort(u.Host)
+		if uerr != nil || serr != nil {
+			log.Printf("E! could not retrieve hostname from mesos agent url: %s %s", uerr, serr)
+			log.Printf("W! mesos task prometheus metrics will be pulled from 'localhost'")
+			hostname = "localhost"
+		}
+
+		for _, url := range getMesosTaskPrometheusURLs(tasks, hostname) {
 			allURLs[url.URL.String()] = url
 		}
 	}
@@ -444,10 +452,10 @@ func processResponse(resp mesos.Response, t agent.Response_Type) (agent.Response
 
 // getMesosTaskPrometheusURLs converts a list of tasks to a list of Prometheus
 // URLs to scrape
-func getMesosTaskPrometheusURLs(tasks *agent.Response_GetTasks) []URLAndAddress {
+func getMesosTaskPrometheusURLs(tasks *agent.Response_GetTasks, hostname string) []URLAndAddress {
 	results := []URLAndAddress{}
 	for _, t := range tasks.GetLaunchedTasks() {
-		for _, endpoint := range getEndpointsFromTaskPorts(&t) {
+		for _, endpoint := range getEndpointsFromTaskPorts(&t, hostname) {
 			uat, err := makeURLAndAddress(t, endpoint)
 			if err != nil {
 				log.Printf("E! %s", err)
@@ -455,7 +463,7 @@ func getMesosTaskPrometheusURLs(tasks *agent.Response_GetTasks) []URLAndAddress 
 			}
 			results = append(results, uat)
 		}
-		if endpoint, ok := getEndpointFromTaskLabels(&t); ok {
+		if endpoint, ok := getEndpointFromTaskLabels(&t, hostname); ok {
 			uat, err := makeURLAndAddress(t, endpoint)
 			if err != nil {
 				log.Printf("E! %s", err)
@@ -479,7 +487,7 @@ func makeURLAndAddress(task mesos.Task, endpoint string) (URLAndAddress, error) 
 
 // getEndpointsFromTaskPorts retrieves a map of ports end enpoints from which
 // Prometheus metrics can be retrieved from a given task.
-func getEndpointsFromTaskPorts(t *mesos.Task) []string {
+func getEndpointsFromTaskPorts(t *mesos.Task, hostname string) []string {
 	endpoints := []string{}
 
 	// loop over the task's ports, adding them if they are appropriately labelled
@@ -491,7 +499,7 @@ func getEndpointsFromTaskPorts(t *mesos.Task) []string {
 			if ep := portLabels["DCOS_METRICS_ENDPOINT"]; ep != "" {
 				route = ep
 			}
-			endpoints = append(endpoints, fmt.Sprintf("http://localhost:%d%s", p.Number, route))
+			endpoints = append(endpoints, fmt.Sprintf("http://%s:%d%s", hostname, p.Number, route))
 		}
 	}
 	return endpoints
@@ -499,7 +507,7 @@ func getEndpointsFromTaskPorts(t *mesos.Task) []string {
 
 // getEndpointFromTaskLabels cross-references the task's DCOS_METRICS_PORT_INDEX
 // label, if present, with its ports to yield an endpoint.
-func getEndpointFromTaskLabels(t *mesos.Task) (string, bool) {
+func getEndpointFromTaskLabels(t *mesos.Task, hostname string) (string, bool) {
 	taskPorts := getPortsFromTask(t)
 	taskLabels := simplifyLabels(t.GetLabels())
 	if taskLabels["DCOS_METRICS_FORMAT"] != "prometheus" {
@@ -518,7 +526,7 @@ func getEndpointFromTaskLabels(t *mesos.Task) (string, bool) {
 	if ep := taskLabels["DCOS_METRICS_ENDPOINT"]; ep != "" {
 		route = ep
 	}
-	return fmt.Sprintf("http://localhost:%d%s", taskPorts[index].Number, route), true
+	return fmt.Sprintf("http://%s:%d%s", hostname, taskPorts[index].Number, route), true
 }
 
 // getPortsFromTask is a convenience method to retrieve a task's ports
