@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -60,7 +61,8 @@ type Prometheus struct {
 	cancel         context.CancelFunc
 	wg             sync.WaitGroup
 
-	mesosClient *httpcli.Client
+	mesosClient   *httpcli.Client
+	mesosHostname string
 }
 
 var sampleConfig = `
@@ -200,7 +202,7 @@ func (p *Prometheus) GetAllURLs() (map[string]URLAndAddress, error) {
 			return allURLs, err
 		}
 
-		for _, url := range getMesosTaskPrometheusURLs(tasks) {
+		for _, url := range getMesosTaskPrometheusURLs(tasks, p.mesosHostname) {
 			allURLs[url.URL.String()] = url
 		}
 	}
@@ -354,6 +356,15 @@ func (p *Prometheus) gatherURL(u URLAndAddress, acc telegraf.Accumulator) error 
 
 // Start will start the Kubernetes scraping if enabled in the configuration
 func (p *Prometheus) Start(a telegraf.Accumulator) error {
+	// Check that the mesos agent url is well-formed
+	if p.MesosAgentUrl != "" {
+		// gofmt prevents us using := assignment below, hence declaration
+		var err error
+		p.mesosHostname, err = getMesosHostname(p.MesosAgentUrl)
+		if err != nil {
+			return fmt.Errorf("the mesos agent URL was malformed: %s", err)
+		}
+	}
 	if p.MonitorPods {
 		var ctx context.Context
 		ctx, p.cancel = context.WithCancel(context.Background())
@@ -367,6 +378,24 @@ func (p *Prometheus) Stop() {
 		p.cancel()
 	}
 	p.wg.Wait()
+}
+
+// getMesosHostname extracts the node's hostname from the mesos agent url
+func getMesosHostname(mesosAgentUrl string) (string, error) {
+	u, err := url.Parse(mesosAgentUrl)
+	if err != nil {
+		return "", err
+	}
+	hostname := u.Host
+
+	// SplitHostPort will error if passed an input with no port
+	if strings.ContainsRune(hostname, ':') {
+		hostname, _, err = net.SplitHostPort(hostname)
+	}
+	if hostname == "" {
+		return hostname, fmt.Errorf("could not extract hostname from: %s", mesosAgentUrl)
+	}
+	return hostname, err
 }
 
 // getMesosClient returns an httpcli client configured with the available levels of
@@ -444,10 +473,10 @@ func processResponse(resp mesos.Response, t agent.Response_Type) (agent.Response
 
 // getMesosTaskPrometheusURLs converts a list of tasks to a list of Prometheus
 // URLs to scrape
-func getMesosTaskPrometheusURLs(tasks *agent.Response_GetTasks) []URLAndAddress {
+func getMesosTaskPrometheusURLs(tasks *agent.Response_GetTasks, hostname string) []URLAndAddress {
 	results := []URLAndAddress{}
 	for _, t := range tasks.GetLaunchedTasks() {
-		for _, endpoint := range getEndpointsFromTaskPorts(&t) {
+		for _, endpoint := range getEndpointsFromTaskPorts(&t, hostname) {
 			uat, err := makeURLAndAddress(t, endpoint)
 			if err != nil {
 				log.Printf("E! %s", err)
@@ -455,7 +484,7 @@ func getMesosTaskPrometheusURLs(tasks *agent.Response_GetTasks) []URLAndAddress 
 			}
 			results = append(results, uat)
 		}
-		if endpoint, ok := getEndpointFromTaskLabels(&t); ok {
+		if endpoint, ok := getEndpointFromTaskLabels(&t, hostname); ok {
 			uat, err := makeURLAndAddress(t, endpoint)
 			if err != nil {
 				log.Printf("E! %s", err)
@@ -479,7 +508,7 @@ func makeURLAndAddress(task mesos.Task, endpoint string) (URLAndAddress, error) 
 
 // getEndpointsFromTaskPorts retrieves a map of ports end enpoints from which
 // Prometheus metrics can be retrieved from a given task.
-func getEndpointsFromTaskPorts(t *mesos.Task) []string {
+func getEndpointsFromTaskPorts(t *mesos.Task, hostname string) []string {
 	endpoints := []string{}
 
 	// loop over the task's ports, adding them if they are appropriately labelled
@@ -491,7 +520,7 @@ func getEndpointsFromTaskPorts(t *mesos.Task) []string {
 			if ep := portLabels["DCOS_METRICS_ENDPOINT"]; ep != "" {
 				route = ep
 			}
-			endpoints = append(endpoints, fmt.Sprintf("http://localhost:%d%s", p.Number, route))
+			endpoints = append(endpoints, fmt.Sprintf("http://%s:%d%s", hostname, p.Number, route))
 		}
 	}
 	return endpoints
@@ -499,7 +528,7 @@ func getEndpointsFromTaskPorts(t *mesos.Task) []string {
 
 // getEndpointFromTaskLabels cross-references the task's DCOS_METRICS_PORT_INDEX
 // label, if present, with its ports to yield an endpoint.
-func getEndpointFromTaskLabels(t *mesos.Task) (string, bool) {
+func getEndpointFromTaskLabels(t *mesos.Task, hostname string) (string, bool) {
 	taskPorts := getPortsFromTask(t)
 	taskLabels := simplifyLabels(t.GetLabels())
 	if taskLabels["DCOS_METRICS_FORMAT"] != "prometheus" {
@@ -518,7 +547,7 @@ func getEndpointFromTaskLabels(t *mesos.Task) (string, bool) {
 	if ep := taskLabels["DCOS_METRICS_ENDPOINT"]; ep != "" {
 		route = ep
 	}
-	return fmt.Sprintf("http://localhost:%d%s", taskPorts[index].Number, route), true
+	return fmt.Sprintf("http://%s:%d%s", hostname, taskPorts[index].Number, route), true
 }
 
 // getPortsFromTask is a convenience method to retrieve a task's ports

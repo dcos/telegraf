@@ -106,8 +106,9 @@ func TestPrometheusGeneratesMetricsAlthoughFirstDNSFails(t *testing.T) {
 }
 
 func TestPrometheusGathersMesosMetrics(t *testing.T) {
-	metricsUrl, _ := url.Parse("http://localhost:12345/metrics")
-	federateUrl, _ := url.Parse("http://localhost:12345/federate")
+	// The mock mesos server listens on 127.0.0.1
+	metricsUrl, _ := url.Parse("http://127.0.0.1:12345/metrics")
+	federateUrl, _ := url.Parse("http://127.0.0.1:12345/federate")
 	testCases := map[string]map[string]URLAndAddress{
 		"empty": {},
 		"portlabel": {
@@ -138,6 +139,8 @@ func TestPrometheusGathersMesosMetrics(t *testing.T) {
 			p := &Prometheus{
 				MesosTimeout:  internal.Duration{Duration: 100 * time.Millisecond},
 				MesosAgentUrl: server.URL,
+				// mesosHostname is assigned in Start()
+				mesosHostname: "127.0.0.1",
 			}
 
 			urls, err := p.GetAllURLs()
@@ -145,5 +148,29 @@ func TestPrometheusGathersMesosMetrics(t *testing.T) {
 			assert.Equal(t, expected, urls)
 
 		})
+	}
+}
+
+func TestGetMesosHostname(t *testing.T) {
+	goodUrls := map[string]string{
+		"http://localhost":                       "localhost",
+		"http://localhost:9090":                  "localhost",
+		"http://192.168.2.2":                     "192.168.2.2",
+		"http://192.168.2.2:9090":                "192.168.2.2",
+		"https://192.168.2.2":                    "192.168.2.2",
+		"http://some-agent.testing.example.com/": "some-agent.testing.example.com",
+	}
+	badUrls := []string{
+		"$UNPARSED_ENVIRONMENT_VARIABLE",
+		"",
+	}
+	for input, expected := range goodUrls {
+		output, err := getMesosHostname(input)
+		assert.Nil(t, err)
+		assert.Equal(t, expected, output)
+	}
+	for _, input := range badUrls {
+		_, err := getMesosHostname(input)
+		assert.NotNil(t, err)
 	}
 }
