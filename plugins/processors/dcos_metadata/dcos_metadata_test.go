@@ -338,7 +338,7 @@ func TestApply(t *testing.T) {
 				assert.Equal(t, expected.Tags(), actual.Tags())
 			}
 
-			waitForContainersToEqual(t, &dm, tc.containers, 100*time.Millisecond)
+			waitForContainersToEqual(t, &dm, tc.containers, 2*time.Second)
 		})
 	}
 }
