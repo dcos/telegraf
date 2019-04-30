@@ -91,19 +91,21 @@ func generateMetrics() {
 		"master/frameworks_inactive",
 		"master/outstanding_offers",
 		// framework offers
-		"master/frameworks/marathon/abc-123/calls",
-		"master/frameworks/marathon/abc-123/calls/accept",
-		"master/frameworks/marathon/abc-123/events",
-		"master/frameworks/marathon/abc-123/events/error",
-		"master/frameworks/marathon/abc-123/offers/sent",
-		"master/frameworks/marathon/abc-123/operations",
-		"master/frameworks/marathon/abc-123/operations/create",
-		"master/frameworks/marathon/abc-123/roles/*/suppressed",
-		"master/frameworks/marathon/abc-123/subscribed",
-		"master/frameworks/marathon/abc-123/tasks/active/task_killing",
-		"master/frameworks/marathon/abc-123/tasks/active/task_dropped",
-		"master/frameworks/marathon/abc-123/tasks/terminal/task_dropped",
-		"master/frameworks/marathon/abc-123/unknown/unknown", // test case for unknown metric type
+		// Framework names in Mesos metric keys are percent-encoded. See
+		// https://mesos.apache.org/documentation/latest/monitoring/#frameworks.
+		"master/frameworks/framework%20name/abc-123/calls",
+		"master/frameworks/framework%20name/abc-123/calls/accept",
+		"master/frameworks/framework%20name/abc-123/events",
+		"master/frameworks/framework%20name/abc-123/events/error",
+		"master/frameworks/framework%20name/abc-123/offers/sent",
+		"master/frameworks/framework%20name/abc-123/operations",
+		"master/frameworks/framework%20name/abc-123/operations/create",
+		"master/frameworks/framework%20name/abc-123/roles/*/suppressed",
+		"master/frameworks/framework%20name/abc-123/subscribed",
+		"master/frameworks/framework%20name/abc-123/tasks/active/task_killing",
+		"master/frameworks/framework%20name/abc-123/tasks/active/task_dropped",
+		"master/frameworks/framework%20name/abc-123/tasks/terminal/task_dropped",
+		"master/frameworks/framework%20name/abc-123/unknown/unknown", // test case for unknown metric type
 		// tasks
 		"master/tasks_error",
 		"master/tasks_failed",
@@ -365,31 +367,31 @@ func TestMesosMaster(t *testing.T) {
 		// framework offers
 		{
 			// "unknown" metric type should still contain framework_name tag
-			"master/frameworks/unknown/unknown":  masterMetrics["master/frameworks/marathon/abc-123/unknown/unknown"],
-			"master/frameworks/calls_total":      masterMetrics["master/frameworks/marathon/abc-123/calls"],
-			"master/frameworks/events_total":     masterMetrics["master/frameworks/marathon/abc-123/events"],
-			"master/frameworks/operations_total": masterMetrics["master/frameworks/marathon/abc-123/operations"],
-			"master/frameworks/subscribed_total": masterMetrics["master/frameworks/marathon/abc-123/subscribed"],
-			"master/frameworks/offers/sent":      masterMetrics["master/frameworks/marathon/abc-123/offers/sent"],
+			"master/frameworks/unknown/unknown":  masterMetrics["master/frameworks/framework%20name/abc-123/unknown/unknown"],
+			"master/frameworks/calls_total":      masterMetrics["master/frameworks/framework%20name/abc-123/calls"],
+			"master/frameworks/events_total":     masterMetrics["master/frameworks/framework%20name/abc-123/events"],
+			"master/frameworks/operations_total": masterMetrics["master/frameworks/framework%20name/abc-123/operations"],
+			"master/frameworks/subscribed_total": masterMetrics["master/frameworks/framework%20name/abc-123/subscribed"],
+			"master/frameworks/offers/sent":      masterMetrics["master/frameworks/framework%20name/abc-123/offers/sent"],
 		},
 		{
-			"master/frameworks/tasks/active": masterMetrics["master/frameworks/marathon/abc-123/tasks/active/task_killing"],
+			"master/frameworks/tasks/active": masterMetrics["master/frameworks/framework%20name/abc-123/tasks/active/task_killing"],
 		},
 		{
-			"master/frameworks/tasks/active":   masterMetrics["master/frameworks/marathon/abc-123/tasks/active/task_dropped"],
-			"master/frameworks/tasks/terminal": masterMetrics["master/frameworks/marathon/abc-123/tasks/terminal/task_dropped"],
+			"master/frameworks/tasks/active":   masterMetrics["master/frameworks/framework%20name/abc-123/tasks/active/task_dropped"],
+			"master/frameworks/tasks/terminal": masterMetrics["master/frameworks/framework%20name/abc-123/tasks/terminal/task_dropped"],
 		},
 		{
-			"master/frameworks/roles/suppressed": masterMetrics["master/frameworks/marathon/abc-123/roles/*/suppressed"],
+			"master/frameworks/roles/suppressed": masterMetrics["master/frameworks/framework%20name/abc-123/roles/*/suppressed"],
 		},
 		{
-			"master/frameworks/calls": masterMetrics["master/frameworks/marathon/abc-123/calls/accept"],
+			"master/frameworks/calls": masterMetrics["master/frameworks/framework%20name/abc-123/calls/accept"],
 		},
 		{
-			"master/frameworks/events": masterMetrics["master/frameworks/marathon/abc-123/events/error"],
+			"master/frameworks/events": masterMetrics["master/frameworks/framework%20name/abc-123/events/error"],
 		},
 		{
-			"master/frameworks/operations": masterMetrics["master/frameworks/marathon/abc-123/operations/create"],
+			"master/frameworks/operations": masterMetrics["master/frameworks/framework%20name/abc-123/operations/create"],
 		},
 		// allocator
 		{
@@ -415,14 +417,14 @@ func TestMesosMaster(t *testing.T) {
 			"url":            masterTestServer.URL,
 			"role":           "master",
 			"state":          "leader",
-			"framework_name": "marathon",
+			"framework_name": "framework name",
 		},
 		{
 			"server":         m.masterURLs[0].Hostname(),
 			"url":            masterTestServer.URL,
 			"role":           "master",
 			"state":          "leader",
-			"framework_name": "marathon",
+			"framework_name": "framework name",
 			"task_state":     "task_killing",
 		},
 		{
@@ -430,7 +432,7 @@ func TestMesosMaster(t *testing.T) {
 			"url":            masterTestServer.URL,
 			"role":           "master",
 			"state":          "leader",
-			"framework_name": "marathon",
+			"framework_name": "framework name",
 			"task_state":     "task_dropped",
 		},
 		{
@@ -438,7 +440,7 @@ func TestMesosMaster(t *testing.T) {
 			"url":            masterTestServer.URL,
 			"role":           "master",
 			"state":          "leader",
-			"framework_name": "marathon",
+			"framework_name": "framework name",
 			"role_name":      "*",
 		},
 		{
@@ -446,7 +448,7 @@ func TestMesosMaster(t *testing.T) {
 			"url":            masterTestServer.URL,
 			"role":           "master",
 			"state":          "leader",
-			"framework_name": "marathon",
+			"framework_name": "framework name",
 			"call_type":      "accept",
 		},
 		{
@@ -454,7 +456,7 @@ func TestMesosMaster(t *testing.T) {
 			"url":            masterTestServer.URL,
 			"role":           "master",
 			"state":          "leader",
-			"framework_name": "marathon",
+			"framework_name": "framework name",
 			"event_type":     "error",
 		},
 		{
@@ -462,7 +464,7 @@ func TestMesosMaster(t *testing.T) {
 			"url":            masterTestServer.URL,
 			"role":           "master",
 			"state":          "leader",
-			"framework_name": "marathon",
+			"framework_name": "framework name",
 			"operation_type": "create",
 		},
 		// allocator
