@@ -768,7 +768,8 @@ func generateTaggedField(parts []string) TaggedField {
 	tf := TaggedField{}
 
 	if parts[0] == "master" {
-		tf.FrameworkName = parts[2]
+		// Mesos encodes framework names in metrics responses.
+		tf.FrameworkName = decodeFrameworkName(parts[2])
 		if len(parts) == 5 {
 			// e.g. /master/frameworks/calls_total
 			tf.FieldName = fmt.Sprintf("%s/%s/%s_total", parts[0], parts[1], parts[4])
@@ -826,6 +827,20 @@ func generateTaggedField(parts []string) TaggedField {
 	}
 
 	return tf
+}
+
+// decodeFrameworkName returns a framework name from its encoded representation, as it would be found in a Mesos
+// metrics response. If decoding fails, it logs a warning and returns the encoded name.
+func decodeFrameworkName(encoded string) string {
+	// https://mesos.apache.org/documentation/latest/monitoring/#frameworks
+	// > The framework name is percent-encoded before creating these metrics; the actual name can be recovered by
+	// > percent-decoding.
+	decoded, err := url.PathUnescape(encoded)
+	if err != nil {
+		log.Printf("W! [inputs.mesos] Error decoding framework name '%s' from Mesos metrics: %s", encoded, err)
+		return encoded
+	}
+	return decoded
 }
 
 func init() {
