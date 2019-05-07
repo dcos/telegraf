@@ -78,6 +78,7 @@ import (
 	_ "github.com/influxdata/telegraf/plugins/inputs/mem"
 	_ "github.com/influxdata/telegraf/plugins/inputs/memcached"
 	_ "github.com/influxdata/telegraf/plugins/inputs/mesos"
+	_ "github.com/influxdata/telegraf/plugins/inputs/mesos_containers"
 	_ "github.com/influxdata/telegraf/plugins/inputs/minecraft"
 	_ "github.com/influxdata/telegraf/plugins/inputs/mongodb"
 	_ "github.com/influxdata/telegraf/plugins/inputs/mqtt_consumer"
