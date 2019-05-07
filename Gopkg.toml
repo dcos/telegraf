@@ -288,3 +288,7 @@
 [[constraint]]
   name = "github.com/google/go-github"
   version = "24.0.1"
+
+[[constraint]]
+  name = "github.com/mesos/mesos-go"
+  version = "0.0.8"
