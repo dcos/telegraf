@@ -506,7 +506,7 @@ func makeURLAndAddress(task mesos.Task, endpoint string) (URLAndAddress, error) 
 	}, err
 }
 
-// getEndpointsFromTaskPorts retrieves a map of ports end enpoints from which
+// getEndpointsFromTaskPorts retrieves a map of ports end endpoints from which
 // Prometheus metrics can be retrieved from a given task.
 func getEndpointsFromTaskPorts(t *mesos.Task, hostname string) []string {
 	endpoints := []string{}
@@ -534,20 +534,51 @@ func getEndpointFromTaskLabels(t *mesos.Task, hostname string) (string, bool) {
 	if taskLabels["DCOS_METRICS_FORMAT"] != "prometheus" {
 		return "", false
 	}
-	index, err := strconv.Atoi(taskLabels["DCOS_METRICS_PORT_INDEX"])
-	if err != nil {
-		log.Printf("E! Could not retrieve port index for %s: %s", t.GetTaskID(), err)
+
+	portIndex := taskLabels["DCOS_METRICS_PORT_INDEX"]
+	portName := taskLabels["DCOS_METRICS_PORT_NAME"]
+	// port number 0 means auto-assign, in theory it should not appear in
+	// the task's port list
+	var portNumber uint32 = 0
+
+	if len(portIndex) == 0 && len(portName) == 0 {
+		// no usable metrics endpoint
 		return "", false
 	}
-	if index < 0 || index >= len(taskPorts) {
-		log.Printf("E! Could not retrieve port index %d for task %s", index, t.GetTaskID())
-		return "", false
+
+	// specifying port via port index has priority of specifying via port name,
+	// and port obtained via name must not override port obtained via index
+	if len(portIndex) > 0 {
+		index, err := strconv.Atoi(portIndex)
+		if err != nil {
+			// non-empty non-int port index is treated as an error, there is no
+			// fallback into name-based association
+			log.Printf("E! Could not retrieve port index for %s: %s", t.GetTaskID(), err)
+			return "", false
+		}
+		if index < 0 || index >= len(taskPorts) {
+			// same here - no fallback to name-based association
+			log.Printf("E! Could not retrieve port index %d for task %s", index, t.GetTaskID())
+			return "", false
+		}
+		portNumber = taskPorts[index].Number
+	} else {
+		for _, taskPort := range taskPorts {
+			if *taskPort.Name == portName {
+				portNumber = taskPort.Number
+			}
+		}
+		if portNumber == 0 {
+			log.Printf("E! Could not match port name %s for task %s", portName, t.GetTaskID())
+			return "", false
+		}
 	}
+
 	route := "/metrics"
 	if ep := taskLabels["DCOS_METRICS_ENDPOINT"]; ep != "" {
 		route = ep
 	}
-	return fmt.Sprintf("http://%s:%d%s", hostname, taskPorts[index].Number, route), true
+	return fmt.Sprintf("http://%s:%d%s", hostname, portNumber, route), true
 }
 
 // getPortsFromTask is a convenience method to retrieve a task's ports

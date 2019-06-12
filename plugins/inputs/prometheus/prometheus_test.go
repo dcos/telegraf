@@ -110,7 +110,10 @@ func TestPrometheusGathersMesosMetrics(t *testing.T) {
 	metricsUrl, _ := url.Parse("http://127.0.0.1:12345/metrics")
 	federateUrl, _ := url.Parse("http://127.0.0.1:12345/federate")
 	testCases := map[string]map[string]URLAndAddress{
-		"empty": {},
+		"empty":                    {},
+		"malformedTaskLabelIndex":  {},
+		"taskLabelIndexOutOfRange": {},
+		"wrongPortName":            {},
 		"portlabel": {
 			metricsUrl.String(): {
 				URL:         metricsUrl,
@@ -123,10 +126,31 @@ func TestPrometheusGathersMesosMetrics(t *testing.T) {
 				Tags:        map[string]string{"container_id": "xyz-123"},
 			},
 		},
-		"tasklabel": {
+		"tasklabelViaIndex": {
 			metricsUrl.String(): {
 				URL:         metricsUrl,
 				OriginalURL: metricsUrl,
+				Tags:        map[string]string{"container_id": "abc-123"},
+			},
+		},
+		"tasklabelViaName": {
+			metricsUrl.String(): {
+				URL:         metricsUrl,
+				OriginalURL: metricsUrl,
+				Tags:        map[string]string{"container_id": "abc-123"},
+			},
+		},
+		"tasklabelIndexPriority": {
+			metricsUrl.String(): {
+				URL:         metricsUrl,
+				OriginalURL: metricsUrl,
+				Tags:        map[string]string{"container_id": "abc-123"},
+			},
+		},
+		"tasklabelAlternatePath": {
+			federateUrl.String(): {
+				URL:         federateUrl,
+				OriginalURL: federateUrl,
 				Tags:        map[string]string{"container_id": "abc-123"},
 			},
 		},

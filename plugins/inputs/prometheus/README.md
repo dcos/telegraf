@@ -89,7 +89,9 @@ To allow collection of the metrics exposed on any given port (or multiple ports)
 OR
 
 * Label the task with `DCOS_METRICS_FORMAT=prometheus`
-* Label the task with the index of the metrics port eg. `DCOS_METRICS_PORT=0`
+* Label the task with the index of the metrics port eg. `DCOS_METRICS_PORT_INDEX=0` or label it with the name of the metrics port eg. `DCOS_METRICS_PORT_NAME=prometheus`
+
+In case when both labels are specified: `DCOS_METRICS_PORT_INDEX` and `DCOS_METRICS_PORT_NAME`, the port index one takes the priority.
 
 #### Bearer Token
 

@@ -1,0 +1,305 @@
+{
+  "type": "GET_TASKS",
+  "get_tasks": {
+    "launched_tasks": [
+      {
+        "name": "boring_task",
+        "task_id": {
+          "value": "boring_task.e5f8080c-f29b-11e8-b6d9-869ff173127b"
+        },
+        "framework_id": {
+          "value": "4c9111a9-9e85-42ae-8834-f8381c5ba287-0000"
+        },
+        "agent_id": {
+          "value": "4c9111a9-9e85-42ae-8834-f8381c5ba287-S0"
+        },
+        "state": "TASK_RUNNING",
+        "statuses": [
+          {
+            "task_id": {
+              "value": "boring_task.e5f8080c-f29b-11e8-b6d9-869ff173127b"
+            },
+            "state": "TASK_RUNNING",
+            "source": "SOURCE_EXECUTOR",
+            "reason": "REASON_TASK_HEALTH_CHECK_STATUS_UPDATED",
+            "agent_id": {
+              "value": "4c9111a9-9e85-42ae-8834-f8381c5ba287-S0"
+            },
+            "executor_id": {
+              "value": "boring_task.e5f8080c-f29b-11e8-b6d9-869ff173127b"
+            },
+            "timestamp": 1543361218.948519,
+            "uuid": "UI6h/S1LQUiCDsaJzOroAg==",
+            "healthy": true,
+            "container_status": {
+              "container_id": {
+                "value": "a431fb6d-6706-453c-9177-0de320c54e41"
+              },
+              "network_infos": [
+                {
+                  "ip_addresses": [
+                    {
+                      "protocol": "IPv4",
+                      "ip_address": "172.31.254.15"
+                    }
+                  ],
+                  "name": "mesos-bridge",
+                  "labels": {
+                    "labels": [
+                      {
+                        "key": "DCOS_SPACE",
+                        "value": "/boring/task"
+                      }
+                    ]
+                  },
+                  "port_mappings": [
+                    {
+                      "host_port": 3968,
+                      "container_port": 80,
+                      "protocol": "tcp"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "status_update_state": "TASK_RUNNING",
+        "status_update_uuid": "UI6h/S1LQUiCDsaJzOroAg==",
+        "labels": {
+          "labels": [
+            {
+              "key": "DCOS_SPACE",
+              "value": "/boring/task"
+            }
+          ]
+        },
+        "discovery": {
+          "visibility": "FRAMEWORK",
+          "name": "boring.task",
+          "ports": {
+            "ports": [
+              {
+                "number": 3968,
+                "name": "http",
+                "protocol": "tcp",
+                "labels": {
+                  "labels": [
+                    {
+                      "key": "network-scope",
+                      "value": "host"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "container": {
+          "type": "MESOS",
+          "mesos": {
+            "image": {
+              "type": "DOCKER",
+              "docker": {
+                "name": "nginx"
+              },
+              "cached": true
+            }
+          },
+          "network_infos": [
+            {
+              "ip_addresses": [
+                {
+                  "protocol": "IPv4"
+                }
+              ],
+              "name": "mesos-bridge",
+              "labels": {
+                "labels": [
+                  {
+                    "key": "DCOS_SPACE",
+                    "value": "/boring/task"
+                  }
+                ]
+              },
+              "port_mappings": [
+                {
+                  "host_port": 3968,
+                  "container_port": 80,
+                  "protocol": "tcp"
+                }
+              ]
+            }
+          ]
+        },
+        "health_check": {
+          "delay_seconds": 15,
+          "interval_seconds": 60,
+          "timeout_seconds": 20,
+          "consecutive_failures": 3,
+          "grace_period_seconds": 300,
+          "type": "HTTP",
+          "http": {
+            "protocol": "IPv4",
+            "scheme": "http",
+            "port": 80,
+            "path": "/"
+          }
+        }
+      },
+      {
+        "name": "interesting.task",
+        "task_id": {
+          "value": "interesting_task.e5f87d3d-f29b-11e8-b6d9-869ff173127b"
+        },
+        "framework_id": {
+          "value": "4c9111a9-9e85-42ae-8834-f8381c5ba287-0000"
+        },
+        "agent_id": {
+          "value": "4c9111a9-9e85-42ae-8834-f8381c5ba287-S0"
+        },
+        "state": "TASK_RUNNING",
+        "statuses": [
+          {
+            "task_id": {
+              "value": "interesting_task.e5f87d3d-f29b-11e8-b6d9-869ff173127b"
+            },
+            "state": "TASK_RUNNING",
+            "source": "SOURCE_EXECUTOR",
+            "reason": "REASON_TASK_HEALTH_CHECK_STATUS_UPDATED",
+            "agent_id": {
+              "value": "4c9111a9-9e85-42ae-8834-f8381c5ba287-S0"
+            },
+            "executor_id": {
+              "value": "interesting_task.e5f87d3d-f29b-11e8-b6d9-869ff173127b"
+            },
+            "timestamp": 1543361219.797565,
+            "uuid": "AXIQ1JKQSXirVquXsJfaEg==",
+            "healthy": true,
+            "container_status": {
+              "container_id": {
+                "value": "abc-123"
+              },
+              "network_infos": [
+                {
+                  "ip_addresses": [
+                    {
+                      "protocol": "IPv4",
+                      "ip_address": "172.31.254.14"
+                    }
+                  ],
+                  "name": "mesos-bridge",
+                  "labels": {
+                    "labels": [
+                      {
+                        "key": "DCOS_SPACE",
+                        "value": "/interesting/task"
+                      },
+                      {
+                        "key": "DCOS_METRICS_FORMAT",
+                        "value": "prometheus"
+                      },
+                      {
+                        "key": "DCOS_METRICS_PORT_INDEX",
+                        "value": "0"
+                      },
+                      {
+                        "key": "DCOS_METRICS_PORT_NAME",
+                        "value": "graf"
+                      }
+                    ]
+                  },
+                  "port_mappings": [
+                    {
+                      "host_port": 12345,
+                      "container_port": 3000,
+                      "protocol": "tcp"
+                    }
+                  ]
+                }
+              ],
+              "executor_pid": 20622
+            }
+          }
+        ],
+        "status_update_state": "TASK_RUNNING",
+        "status_update_uuid": "AXIQ1JKQSXirVquXsJfaEg==",
+        "labels": {
+          "labels": [
+            {
+              "key": "DCOS_SPACE",
+              "value": "/interesting/task"
+            },
+            {
+              "key": "DCOS_METRICS_FORMAT",
+              "value": "prometheus"
+            },
+            {
+              "key": "DCOS_METRICS_PORT_INDEX",
+              "value": "0"
+            },
+            {
+              "key": "DCOS_METRICS_PORT_NAME",
+              "value": "graf"
+            }
+          ]
+        },
+        "discovery": {
+          "visibility": "FRAMEWORK",
+          "name": "interesting.task",
+          "ports": {
+            "ports": [
+              {
+                "number": 12345,
+                "name": "fooBar",
+                "protocol": "tcp"
+              },
+              {
+                "number": 8080,
+                "name": "graf",
+                "protocol": "tcp"
+              }
+            ]
+          }
+        },
+        "container": {
+          "type": "MESOS",
+          "mesos": {
+            "image": {
+              "type": "DOCKER",
+              "docker": {
+                "name": "nginx"
+              },
+              "cached": true
+            }
+          },
+          "network_infos": [
+            {
+              "ip_addresses": [
+                {
+                  "protocol": "IPv4"
+                }
+              ],
+              "name": "mesos-bridge",
+              "labels": {
+                "labels": [
+                  {
+                    "key": "DCOS_SPACE",
+                    "value": "/boring/task"
+                  }
+                ]
+              },
+              "port_mappings": [
+                {
+                  "host_port": 12345,
+                  "container_port": 3000,
+                  "protocol": "tcp"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
