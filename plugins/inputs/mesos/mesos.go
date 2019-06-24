@@ -116,7 +116,7 @@ func (tf TaggedField) tags() fieldTags {
 }
 
 var allMetrics = map[Role][]string{
-	MASTER: {"resources", "master", "system", "agents", "frameworks", "framework_offers", "tasks", "messages", "evqueue", "registrar", "allocator"},
+	MASTER: {"resources", "master", "system", "agents", "frameworks", "framework_offers", "tasks", "operations", "messages", "evqueue", "registrar", "allocator"},
 	SLAVE:  {"resources", "agent", "system", "executors", "tasks", "messages"},
 }
 
@@ -134,6 +134,7 @@ var sampleConfig = `
     "frameworks",
     "framework_offers",
     "tasks",
+		"operations",
     "messages",
     "evqueue",
     "registrar",
@@ -424,6 +425,45 @@ func getMetrics(role Role, group string) []string {
 			"master/tasks_running",
 			"master/tasks_staging",
 			"master/tasks_starting",
+		}
+
+		m["operations"] = []string{
+			"master/operations/total",
+			"master/operations/pending",
+			"master/operations/recovering",
+			"master/operations/unreachable",
+			"master/operations/reserve/total",
+			"master/operations/unreserve/total",
+			"master/operations/create/total",
+			"master/operations/destroy/total",
+			"master/operations/grow_volume/total",
+			"master/operations/shrink_volume/total",
+			"master/operations/create_disk/total",
+			"master/operations/destroy_disk/total",
+			"master/operations/reserve/pending",
+			"master/operations/reserve/recoverable",
+			"master/operations/reserve/unreachable",
+			"master/operations/unreserve/pending",
+			"master/operations/unreserve/recoverable",
+			"master/operations/unreserve/unreachable",
+			"master/operations/create/pending",
+			"master/operations/create/recoverable",
+			"master/operations/create/unreachable",
+			"master/operations/destroy/pending",
+			"master/operations/destroy/recoverable",
+			"master/operations/destroy/unreachable",
+			"master/operations/grow_volume/pending",
+			"master/operations/grow_volume/recoverable",
+			"master/operations/grow_volume/unreachable",
+			"master/operations/shrink_volume/pending",
+			"master/operations/shrink_volume/recoverable",
+			"master/operations/shrink_volume/unreachable",
+			"master/operations/create_disk/pending",
+			"master/operations/create_disk/recoverable",
+			"master/operations/create_disk/unreachable",
+			"master/operations/destroy_disk/pending",
+			"master/operations/destroy_disk/recoverable",
+			"master/operations/destroy_disk/unreachable",
 		}
 
 		m["messages"] = []string{
