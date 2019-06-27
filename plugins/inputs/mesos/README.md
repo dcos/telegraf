@@ -157,28 +157,28 @@ Mesos master metric groups
 		- master/operations/create_disk/total
 		- master/operations/destroy_disk/total
 		- master/operations/reserve/pending
-		- master/operations/reserve/recoverable
+		- master/operations/reserve/recovering
 		- master/operations/reserve/unreachable
 		- master/operations/unreserve/pending
-		- master/operations/unreserve/recoverable
+		- master/operations/unreserve/recovering
 		- master/operations/unreserve/unreachable
 		- master/operations/create/pending
-		- master/operations/create/recoverable
+		- master/operations/create/recovering
 		- master/operations/create/unreachable
 		- master/operations/destroy/pending
-		- master/operations/destroy/recoverable
+		- master/operations/destroy/recovering
 		- master/operations/destroy/unreachable
 		- master/operations/grow_volume/pending
-		- master/operations/grow_volume/recoverable
+		- master/operations/grow_volume/recovering
 		- master/operations/grow_volume/unreachable
 		- master/operations/shrink_volume/pending
-		- master/operations/shrink_volume/recoverable
+		- master/operations/shrink_volume/recovering
 		- master/operations/shrink_volume/unreachable
 		- master/operations/create_disk/pending
-		- master/operations/create_disk/recoverable
+		- master/operations/create_disk/recovering
 		- master/operations/create_disk/unreachable
 		- master/operations/destroy_disk/pending
-		- master/operations/destroy_disk/recoverable
+		- master/operations/destroy_disk/recovering
 		- master/operations/destroy_disk/unreachable
 
 - messages
