@@ -380,7 +380,7 @@ Mesos slave metric groups
     - role (master/slave)
 
 - All master measurements have the extra tags:
-	- state (leader/follower)
+    - state (leader/follower)
 
 ### Example Output:
 ```
