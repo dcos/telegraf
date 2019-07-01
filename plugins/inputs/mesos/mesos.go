@@ -134,7 +134,7 @@ var sampleConfig = `
     "frameworks",
     "framework_offers",
     "tasks",
-		"operations",
+    "operations",
     "messages",
     "evqueue",
     "registrar",
