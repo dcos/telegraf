@@ -21,6 +21,7 @@ For more information, please check the [Mesos Observability Metrics](http://meso
     "frameworks",
     "framework_offers",
     "tasks",
+    "operations",
     "messages",
     "evqueue",
     "registrar",
@@ -141,6 +142,80 @@ Mesos master metric groups
     - master/tasks_running
     - master/tasks_staging
     - master/tasks_starting
+
+- operations
+    - master/operations/total
+    - master/operations/pending
+    - master/operations/recovering
+    - master/operations/unreachable
+    - master/operations/finished
+    - master/operations/error
+    - master/operations/dropped
+    - master/operations/gone_by_operator
+    - master/operations/reserve/total
+    - master/operations/unreserve/total
+    - master/operations/create/total
+    - master/operations/destroy/total
+    - master/operations/grow_volume/total
+    - master/operations/shrink_volume/total
+    - master/operations/create_disk/total
+    - master/operations/destroy_disk/total
+    - master/operations/reserve/pending
+    - master/operations/reserve/recovering
+    - master/operations/reserve/unreachable
+    - master/operations/reserve/finished
+    - master/operations/reserve/error
+    - master/operations/reserve/dropped
+    - master/operations/reserve/gone_by_operator
+    - master/operations/unreserve/pending
+    - master/operations/unreserve/recovering
+    - master/operations/unreserve/unreachable
+    - master/operations/unreserve/finished
+    - master/operations/unreserve/error
+    - master/operations/unreserve/dropped
+    - master/operations/unreserve/gone_by_operator
+    - master/operations/create/pending
+    - master/operations/create/recovering
+    - master/operations/create/unreachable
+    - master/operations/create/finished
+    - master/operations/create/error
+    - master/operations/create/dropped
+    - master/operations/create/gone_by_operator
+    - master/operations/destroy/pending
+    - master/operations/destroy/recovering
+    - master/operations/destroy/unreachable
+    - master/operations/destroy/finished
+    - master/operations/destroy/error
+    - master/operations/destroy/dropped
+    - master/operations/destroy/gone_by_operator
+    - master/operations/grow_volume/pending
+    - master/operations/grow_volume/recovering
+    - master/operations/grow_volume/unreachable
+    - master/operations/grow_volume/finished
+    - master/operations/grow_volume/error
+    - master/operations/grow_volume/dropped
+    - master/operations/grow_volume/gone_by_operator
+    - master/operations/shrink_volume/pending
+    - master/operations/shrink_volume/recovering
+    - master/operations/shrink_volume/unreachable
+    - master/operations/shrink_volume/finished
+    - master/operations/shrink_volume/error
+    - master/operations/shrink_volume/dropped
+    - master/operations/shrink_volume/gone_by_operator
+    - master/operations/create_disk/pending
+    - master/operations/create_disk/recovering
+    - master/operations/create_disk/unreachable
+    - master/operations/create_disk/finished
+    - master/operations/create_disk/error
+    - master/operations/create_disk/dropped
+    - master/operations/create_disk/gone_by_operator
+    - master/operations/destroy_disk/pending
+    - master/operations/destroy_disk/recovering
+    - master/operations/destroy_disk/unreachable
+    - master/operations/destroy_disk/finished
+    - master/operations/destroy_disk/error
+    - master/operations/destroy_disk/dropped
+    - master/operations/destroy_disk/gone_by_operator
 
 - messages
     - master/invalid_executor_to_framework_messages
@@ -305,7 +380,7 @@ Mesos slave metric groups
     - role (master/slave)
 
 - All master measurements have the extra tags:
-	- state (leader/follower)
+    - state (leader/follower)
 
 ### Example Output:
 ```
