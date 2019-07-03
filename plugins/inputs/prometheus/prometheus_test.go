@@ -106,7 +106,6 @@ func TestPrometheusGeneratesMetricsAlthoughFirstDNSFails(t *testing.T) {
 }
 
 func TestPrometheusGathersMesosMetrics(t *testing.T) {
-	// The mock mesos server listens on 127.0.0.1
 	metricsUrl := unsafelyParse("http://127.0.0.1:12345/metrics")
 	federateUrl := unsafelyParse("http://127.0.0.1:12345/federate")
 	testCases := map[string]map[string]URLAndAddress{
@@ -127,9 +126,9 @@ func TestPrometheusGathersMesosMetrics(t *testing.T) {
 			},
 		},
 		"tasklabelViaIndex": {
-			metricsUrl.String(): {
-				URL:         metricsUrl,
-				OriginalURL: metricsUrl,
+			"http://198.2.0.1:12345/metrics": {
+				URL:         unsafelyParse("http://198.2.0.1:12345/metrics"),
+				OriginalURL: unsafelyParse("http://198.2.0.1:12345/metrics"),
 				Tags:        map[string]string{"container_id": "abc-123"},
 			},
 		},
