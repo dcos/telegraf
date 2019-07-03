@@ -147,9 +147,9 @@ func TestPrometheusGathersMesosMetrics(t *testing.T) {
 			},
 		},
 		"tasklabelAlternatePath": {
-			federateUrl.String(): {
-				URL:         federateUrl,
-				OriginalURL: federateUrl,
+			"http://198.2.0.1:12345/federate": {
+				URL:         unsafelyParse("http://198.2.0.1:12345/federate"),
+				OriginalURL: unsafelyParse("http://198.2.0.1:12345/federate"),
 				Tags:        map[string]string{"container_id": "abc-123"},
 			},
 		},
