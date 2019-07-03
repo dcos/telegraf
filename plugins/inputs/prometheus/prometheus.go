@@ -202,7 +202,7 @@ func (p *Prometheus) GetAllURLs() (map[string]URLAndAddress, error) {
 			return allURLs, err
 		}
 
-		for _, url := range getMesosTaskPrometheusURLs(tasks, p.mesosHostname) {
+		for _, url := range getMesosTaskPrometheusURLs(tasks) {
 			allURLs[url.URL.String()] = url
 		}
 	}
@@ -473,10 +473,10 @@ func processResponse(resp mesos.Response, t agent.Response_Type) (agent.Response
 
 // getMesosTaskPrometheusURLs converts a list of tasks to a list of Prometheus
 // URLs to scrape
-func getMesosTaskPrometheusURLs(tasks *agent.Response_GetTasks, hostname string) []URLAndAddress {
+func getMesosTaskPrometheusURLs(tasks *agent.Response_GetTasks) []URLAndAddress {
 	results := []URLAndAddress{}
 	for _, t := range tasks.GetLaunchedTasks() {
-		for _, endpoint := range getEndpointsFromTaskPorts(&t, hostname) {
+		for _, endpoint := range getEndpointsFromTaskPorts(&t) {
 			uat, err := makeURLAndAddress(t, endpoint)
 			if err != nil {
 				log.Printf("E! %s", err)
@@ -484,7 +484,7 @@ func getMesosTaskPrometheusURLs(tasks *agent.Response_GetTasks, hostname string)
 			}
 			results = append(results, uat)
 		}
-		if endpoint, ok := getEndpointFromTaskLabels(&t, hostname); ok {
+		if endpoint, ok := getEndpointFromTaskLabels(&t); ok {
 			uat, err := makeURLAndAddress(t, endpoint)
 			if err != nil {
 				log.Printf("E! %s", err)
@@ -508,11 +508,18 @@ func makeURLAndAddress(task mesos.Task, endpoint string) (URLAndAddress, error) 
 
 // getEndpointsFromTaskPorts retrieves a map of ports end endpoints from which
 // Prometheus metrics can be retrieved from a given task.
-func getEndpointsFromTaskPorts(t *mesos.Task, hostname string) []string {
+func getEndpointsFromTaskPorts(t *mesos.Task) []string {
 	endpoints := []string{}
 
 	// loop over the task's ports, adding them if they are appropriately labelled
 	taskPorts := getPortsFromTask(t)
+
+	taskIP, err := getTaskIP(t.GetStatuses())
+	if err != nil {
+		log.Printf("E! Could not retrieve IP address for %s: %s", t.GetTaskID(), err)
+		return endpoints
+	}
+
 	for _, p := range taskPorts {
 		portLabels := simplifyLabels(p.GetLabels())
 		if portLabels["DCOS_METRICS_FORMAT"] == "prometheus" {
@@ -520,7 +527,7 @@ func getEndpointsFromTaskPorts(t *mesos.Task, hostname string) []string {
 			if ep := portLabels["DCOS_METRICS_ENDPOINT"]; ep != "" {
 				route = ep
 			}
-			endpoints = append(endpoints, fmt.Sprintf("http://%s:%d%s", hostname, p.Number, route))
+			endpoints = append(endpoints, fmt.Sprintf("http://%s:%d%s", taskIP, p.Number, route))
 		}
 	}
 	return endpoints
@@ -528,9 +535,15 @@ func getEndpointsFromTaskPorts(t *mesos.Task, hostname string) []string {
 
 // getEndpointFromTaskLabels cross-references the task's DCOS_METRICS_PORT_INDEX
 // label, if present, with its ports to yield an endpoint.
-func getEndpointFromTaskLabels(t *mesos.Task, hostname string) (string, bool) {
+func getEndpointFromTaskLabels(t *mesos.Task) (string, bool) {
 	taskPorts := getPortsFromTask(t)
 	taskLabels := simplifyLabels(t.GetLabels())
+	taskIP, err := getTaskIP(t.GetStatuses())
+	if err != nil {
+		log.Printf("E! Could not retrieve IP address for %s: %s", t.GetTaskID(), err)
+		return "", false
+	}
+
 	if taskLabels["DCOS_METRICS_FORMAT"] != "prometheus" {
 		return "", false
 	}
@@ -578,7 +591,7 @@ func getEndpointFromTaskLabels(t *mesos.Task, hostname string) (string, bool) {
 	if ep := taskLabels["DCOS_METRICS_ENDPOINT"]; ep != "" {
 		route = ep
 	}
-	return fmt.Sprintf("http://%s:%d%s", hostname, portNumber, route), true
+	return fmt.Sprintf("http://%s:%d%s", taskIP, portNumber, route), true
 }
 
 // getPortsFromTask is a convenience method to retrieve a task's ports
@@ -610,6 +623,29 @@ func getContainerIDs(statuses []mesos.TaskStatus) (containerID string, parentCon
 		}
 	}
 	return
+}
+
+// getTaskIP retrieves the IP Address assigned to a task, given its statuses
+func getTaskIP(statuses []mesos.TaskStatus) (string, error) {
+	// Statuses are in chronological order, the last is the latest
+	if len(statuses) == 0 {
+		return "", errors.New("task had no associated statuses")
+	}
+	status := statuses[len(statuses)-1]
+
+	cs := status.GetContainerStatus()
+	if cs != nil {
+		// Any IP address will work, we pick the first
+		ni := cs.GetNetworkInfos()
+		if len(ni) > 0 {
+			info := ni[0]
+			ip := info.GetIPAddresses()
+			if len(ip) > 0 {
+				return ip[0].GetIPAddress(), nil
+			}
+		}
+	}
+	return "", errors.New("task had no associated IP address")
 }
 
 // simplifyLabels converts a Labels object to a hashmap
