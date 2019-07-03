@@ -132,9 +132,9 @@ func TestPrometheusGathersMesosMetrics(t *testing.T) {
 			},
 		},
 		"tasklabelViaName": {
-			metricsUrl.String(): {
-				URL:         metricsUrl,
-				OriginalURL: metricsUrl,
+			"http://198.2.0.1:12345/metrics": {
+				URL:         unsafelyParse("http://198.2.0.1:12345/metrics"),
+				OriginalURL: unsafelyParse("http://198.2.0.1:12345/metrics"),
 				Tags:        map[string]string{"container_id": "abc-123"},
 			},
 		},
