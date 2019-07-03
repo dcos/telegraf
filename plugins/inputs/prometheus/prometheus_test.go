@@ -107,8 +107,8 @@ func TestPrometheusGeneratesMetricsAlthoughFirstDNSFails(t *testing.T) {
 
 func TestPrometheusGathersMesosMetrics(t *testing.T) {
 	// The mock mesos server listens on 127.0.0.1
-	metricsUrl, _ := url.Parse("http://127.0.0.1:12345/metrics")
-	federateUrl, _ := url.Parse("http://127.0.0.1:12345/federate")
+	metricsUrl := unsafelyParse("http://127.0.0.1:12345/metrics")
+	federateUrl := unsafelyParse("http://127.0.0.1:12345/federate")
 	testCases := map[string]map[string]URLAndAddress{
 		"empty":                    {},
 		"malformedTaskLabelIndex":  {},
@@ -154,6 +154,23 @@ func TestPrometheusGathersMesosMetrics(t *testing.T) {
 				Tags:        map[string]string{"container_id": "abc-123"},
 			},
 		},
+		"networkModes": {
+			"http://198.0.2.1:7070/metrics": {
+				URL:         unsafelyParse("http://198.0.2.1:7070/metrics"),
+				OriginalURL: unsafelyParse("http://198.0.2.1:7070/metrics"),
+				Tags:        map[string]string{"container_id": "host-123"},
+			},
+			"http://198.0.2.2:8080/metrics": {
+				URL:         unsafelyParse("http://198.0.2.2:8080/metrics"),
+				OriginalURL: unsafelyParse("http://198.0.2.2:8080/metrics"),
+				Tags:        map[string]string{"container_id": "bridge-123"},
+			},
+			"http://198.0.2.3:9090/metrics": {
+				URL:         unsafelyParse("http://198.0.2.3:9090/metrics"),
+				OriginalURL: unsafelyParse("http://198.0.2.3:9090/metrics"),
+				Tags:        map[string]string{"container_id": "container-123"},
+			},
+		},
 	}
 	for scenario, expected := range testCases {
 		t.Run(scenario, func(t *testing.T) {
@@ -197,4 +214,10 @@ func TestGetMesosHostname(t *testing.T) {
 		_, err := getMesosHostname(input)
 		assert.NotNil(t, err)
 	}
+}
+
+// unsafelyParse is a utility method that ignores errors from url.Parse
+func unsafelyParse(u string) *url.URL {
+	result, _ := url.Parse(u)
+	return result
 }
