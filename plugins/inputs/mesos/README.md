@@ -26,6 +26,7 @@ For more information, please check the [Mesos Observability Metrics](http://meso
     "evqueue",
     "registrar",
     "allocator",
+    "overlay",
   ]
   ## A list of Mesos slaves, default is []
   # slaves = []
@@ -37,6 +38,7 @@ For more information, please check the [Mesos Observability Metrics](http://meso
   #   "executors",
   #   "tasks",
   #   "messages",
+  #   "overlay",
   # ]
   ## The user agent to send with requests
   user_agent = "Telegraf-mesos"
@@ -306,6 +308,23 @@ Mesos master metric groups
     - allocator/resources/mem/offered_or_allocated
     - allocator/resources/mem/total
 
+- overlay
+    - overlay/master/process_restarts
+    - overlay/master/log/ensemble_size
+    - overlay/master/log/recovered
+    - overlay/master/recovering
+    - overlay/master/ip_allocation_failures
+    - overlay/master/ip6_allocation_failures
+    - overlay/master/subnet_allocation_failures
+    - overlay/master/subnet6_allocation_failures
+    - overlay/master/bridge_allocation_failures
+    - overlay/master/internal/register_agent_messages_received
+    - overlay/master/internal/register_agent_messages_dropped
+    - overlay/master/internal/update_agent_overlays_messages_sent
+    - overlay/master/internal/agent_registered_messages_received
+    - overlay/master/internal/agent_registered_messages_dropped
+    - overlay/master/internal/agent_registered_acknowledgements_sent
+
 Mesos slave metric groups
 - resources
     - slave/cpus_percent
@@ -372,6 +391,20 @@ Mesos slave metric groups
     - slave/valid_framework_messages
     - slave/valid_status_updates
 
+- overlay
+    - overlay/slave/registering
+    - overlay/slave/overlay_config_failed
+    - overlay/slave/overlay_config_failures
+    - overlay/slave/overlays_without_subnets
+    - overlay/slave/docker_cmd_failures
+    - overlay/slave/internal/register_agent_messages_sent
+    - overlay/slave/internal/update_agent_overlays_messages_received
+    - overlay/slave/internal/update_agent_overlays_messages_dropped
+    - overlay/slave/internal/agent_registered_messages_sent
+    - overlay/slave/internal/agent_registered_messages_dropped
+    - overlay/slave/internal/agent_registered_acknowledgements_received
+    - overlay/slave/internal/agent_registered_acknowledgements_dropped
+
 ### Tags:
 
 - All master/slave measurements have the following tags:
@@ -404,4 +437,3 @@ master/mem_revocable_used=0,master/mem_total=1002,
 master/mem_used=0,master/messages_authenticate=0,
 master/messages_deactivate_framework=0 ...
 ```
-

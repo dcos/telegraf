@@ -279,6 +279,22 @@ func generateMetrics() {
 		"allocator/mesos/resources/mem/offered_or_allocated",
 		"allocator/mesos/resources/mem/total",
 		"allocator/mesos/unknown/unknown/unknown/unknown", // test case for unknown metric type
+		// overlay
+		"overlay/master/process_restarts",
+		"overlay/master/log/ensemble_size",
+		"overlay/master/log/recovered",
+		"overlay/master/recovering",
+		"overlay/master/ip_allocation_failures",
+		"overlay/master/ip6_allocation_failures",
+		"overlay/master/subnet_allocation_failures",
+		"overlay/master/subnet6_allocation_failures",
+		"overlay/master/bridge_allocation_failures",
+		"overlay/master/internal/register_agent_messages_received",
+		"overlay/master/internal/register_agent_messages_dropped",
+		"overlay/master/internal/update_agent_overlays_messages_sent",
+		"overlay/master/internal/agent_registered_messages_received",
+		"overlay/master/internal/agent_registered_messages_dropped",
+		"overlay/master/internal/agent_registered_acknowledgements_sent",
 	}
 
 	for _, k := range metricNames {
@@ -347,6 +363,19 @@ func generateMetrics() {
 		"slave/invalid_status_updates",
 		"slave/valid_framework_messages",
 		"slave/valid_status_updates",
+		// overlay
+		"overlay/slave/registering",
+		"overlay/slave/overlay_config_failed",
+		"overlay/slave/overlay_config_failures",
+		"overlay/slave/overlays_without_subnets",
+		"overlay/slave/docker_cmd_failures",
+		"overlay/slave/internal/register_agent_messages_sent",
+		"overlay/slave/internal/update_agent_overlays_messages_received",
+		"overlay/slave/internal/update_agent_overlays_messages_dropped",
+		"overlay/slave/internal/agent_registered_messages_sent",
+		"overlay/slave/internal/agent_registered_messages_dropped",
+		"overlay/slave/internal/agent_registered_acknowledgements_received",
+		"overlay/slave/internal/agent_registered_acknowledgements_dropped",
 	}
 
 	for _, k := range metricNames {
