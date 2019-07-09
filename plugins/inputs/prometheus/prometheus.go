@@ -604,6 +604,21 @@ func getPortsFromTask(t *mesos.Task) []mesos.Port {
 	return []mesos.Port{}
 }
 
+// getHostnameForPort inspects the port for its network-scope label. If present,
+// and set to container, it returns the task's IP address. If absent, or set to
+// host, it returns the node's hostname.
+func getHostnameForPort(p *mesos.Port, t *mesos.Task, nodeHostname string) (string, error) {
+	portLabels := simplifyLabels(p.GetLabels())
+	if portLabels["network-scope"] == "container" {
+		taskIP, err := getTaskIP(t.GetStatuses())
+		if err != nil {
+			return nodeHostname, fmt.Errorf("could not retrieve IP address for %s: %s", t.GetTaskID(), err)
+		}
+		return taskIP, nil
+	}
+	return nodeHostname, nil
+}
+
 // getContainerIDs retrieves the container ID and the parent container ID of a
 // task from its TaskStatus. The container ID corresponds to the task's
 // container, the parent container ID corresponds to the task's executor's
