@@ -202,7 +202,7 @@ func (p *Prometheus) GetAllURLs() (map[string]URLAndAddress, error) {
 			return allURLs, err
 		}
 
-		for _, url := range getMesosTaskPrometheusURLs(tasks) {
+		for _, url := range getMesosTaskPrometheusURLs(tasks, p.mesosHostname) {
 			allURLs[url.URL.String()] = url
 		}
 	}
@@ -473,10 +473,10 @@ func processResponse(resp mesos.Response, t agent.Response_Type) (agent.Response
 
 // getMesosTaskPrometheusURLs converts a list of tasks to a list of Prometheus
 // URLs to scrape
-func getMesosTaskPrometheusURLs(tasks *agent.Response_GetTasks) []URLAndAddress {
+func getMesosTaskPrometheusURLs(tasks *agent.Response_GetTasks, hostname string) []URLAndAddress {
 	results := []URLAndAddress{}
 	for _, t := range tasks.GetLaunchedTasks() {
-		for _, endpoint := range getEndpointsFromTaskPorts(&t) {
+		for _, endpoint := range getEndpointsFromTaskPorts(&t, hostname) {
 			uat, err := makeURLAndAddress(t, endpoint)
 			if err != nil {
 				log.Printf("E! %s", err)
@@ -484,7 +484,7 @@ func getMesosTaskPrometheusURLs(tasks *agent.Response_GetTasks) []URLAndAddress 
 			}
 			results = append(results, uat)
 		}
-		if endpoint, ok := getEndpointFromTaskLabels(&t); ok {
+		if endpoint, ok := getEndpointFromTaskLabels(&t, hostname); ok {
 			uat, err := makeURLAndAddress(t, endpoint)
 			if err != nil {
 				log.Printf("E! %s", err)
@@ -508,26 +508,25 @@ func makeURLAndAddress(task mesos.Task, endpoint string) (URLAndAddress, error) 
 
 // getEndpointsFromTaskPorts retrieves a map of ports end endpoints from which
 // Prometheus metrics can be retrieved from a given task.
-func getEndpointsFromTaskPorts(t *mesos.Task) []string {
+func getEndpointsFromTaskPorts(t *mesos.Task, nodeHostname string) []string {
 	endpoints := []string{}
 
 	// loop over the task's ports, adding them if they are appropriately labelled
 	taskPorts := getPortsFromTask(t)
 
-	taskIP, err := getTaskIP(t.GetStatuses())
-	if err != nil {
-		log.Printf("E! Could not retrieve IP address for %s: %s", t.GetTaskID(), err)
-		return endpoints
-	}
-
 	for _, p := range taskPorts {
 		portLabels := simplifyLabels(p.GetLabels())
 		if portLabels["DCOS_METRICS_FORMAT"] == "prometheus" {
+			hostname, err := getHostnameForPort(&p, t, nodeHostname)
+			if err != nil {
+				log.Printf("E! %s", err)
+				continue
+			}
 			route := "/metrics"
 			if ep := portLabels["DCOS_METRICS_ENDPOINT"]; ep != "" {
 				route = ep
 			}
-			endpoints = append(endpoints, fmt.Sprintf("http://%s:%d%s", taskIP, p.Number, route))
+			endpoints = append(endpoints, fmt.Sprintf("http://%s:%d%s", hostname, p.Number, route))
 		}
 	}
 	return endpoints
@@ -535,14 +534,9 @@ func getEndpointsFromTaskPorts(t *mesos.Task) []string {
 
 // getEndpointFromTaskLabels cross-references the task's DCOS_METRICS_PORT_INDEX
 // label, if present, with its ports to yield an endpoint.
-func getEndpointFromTaskLabels(t *mesos.Task) (string, bool) {
+func getEndpointFromTaskLabels(t *mesos.Task, nodeHostname string) (string, bool) {
 	taskPorts := getPortsFromTask(t)
 	taskLabels := simplifyLabels(t.GetLabels())
-	taskIP, err := getTaskIP(t.GetStatuses())
-	if err != nil {
-		log.Printf("E! Could not retrieve IP address for %s: %s", t.GetTaskID(), err)
-		return "", false
-	}
 
 	if taskLabels["DCOS_METRICS_FORMAT"] != "prometheus" {
 		return "", false
@@ -552,7 +546,7 @@ func getEndpointFromTaskLabels(t *mesos.Task) (string, bool) {
 	portName := taskLabels["DCOS_METRICS_PORT_NAME"]
 	// port number 0 means auto-assign, in theory it should not appear in
 	// the task's port list
-	var portNumber uint32 = 0
+	var port mesos.Port
 
 	if len(portIndex) == 0 && len(portName) == 0 {
 		// no usable metrics endpoint
@@ -574,24 +568,30 @@ func getEndpointFromTaskLabels(t *mesos.Task) (string, bool) {
 			log.Printf("E! Could not retrieve port index %d for task %s", index, t.GetTaskID())
 			return "", false
 		}
-		portNumber = taskPorts[index].Number
+		port = taskPorts[index]
 	} else {
 		for _, taskPort := range taskPorts {
 			if *taskPort.Name == portName {
-				portNumber = taskPort.Number
+				port = taskPort
 			}
 		}
-		if portNumber == 0 {
+		if port.Number == 0 {
 			log.Printf("E! Could not match port name %s for task %s", portName, t.GetTaskID())
 			return "", false
 		}
+	}
+
+	hostname, err := getHostnameForPort(&port, t, nodeHostname)
+	if err != nil {
+		log.Printf("E! %s", err)
+		return "", false
 	}
 
 	route := "/metrics"
 	if ep := taskLabels["DCOS_METRICS_ENDPOINT"]; ep != "" {
 		route = ep
 	}
-	return fmt.Sprintf("http://%s:%d%s", taskIP, portNumber, route), true
+	return fmt.Sprintf("http://%s:%d%s", hostname, port.Number, route), true
 }
 
 // getPortsFromTask is a convenience method to retrieve a task's ports
