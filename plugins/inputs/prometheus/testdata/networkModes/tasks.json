@@ -1,0 +1,565 @@
+{
+  "type": "GET_TASKS",
+  "get_tasks": {
+    "launched_tasks": [
+      {
+        "name": "test-host-mode",
+        "task_id": {
+          "value": "test-host-mode.instance-e465ae75-993b-11e9-83f2-06bbd400330a._app.36"
+        },
+        "framework_id": {
+          "value": "6bd07876-31d8-4c11-b94c-e4dd51915ae3-0001"
+        },
+        "agent_id": {
+          "value": "6bd07876-31d8-4c11-b94c-e4dd51915ae3-S1"
+        },
+        "state": "TASK_RUNNING",
+        "resources": [
+          {
+            "name": "cpus",
+            "type": "SCALAR",
+            "scalar": {
+              "value": 0.1
+            },
+            "allocation_info": {
+              "role": "slave_public"
+            }
+          },
+          {
+            "name": "mem",
+            "type": "SCALAR",
+            "scalar": {
+              "value": 128
+            },
+            "allocation_info": {
+              "role": "slave_public"
+            }
+          },
+          {
+            "name": "ports",
+            "type": "RANGES",
+            "ranges": {
+              "range": [
+                {
+                  "begin": 25895,
+                  "end": 25895
+                }
+              ]
+            },
+            "allocation_info": {
+              "role": "slave_public"
+            }
+          }
+        ],
+        "statuses": [
+          {
+            "task_id": {
+              "value": "test-host-mode.instance-e465ae75-993b-11e9-83f2-06bbd400330a._app.36"
+            },
+            "state": "TASK_STARTING",
+            "source": "SOURCE_EXECUTOR",
+            "agent_id": {
+              "value": "6bd07876-31d8-4c11-b94c-e4dd51915ae3-S1"
+            },
+            "executor_id": {
+              "value": "test-host-mode.instance-e465ae75-993b-11e9-83f2-06bbd400330a._app.36"
+            },
+            "timestamp": 1562114118.709277,
+            "uuid": "Fqn3rfRIT4Oz69J96jKU9A==",
+            "container_status": {
+              "container_id": {
+                "value": "host-123"
+              },
+              "network_infos": [
+                {
+                  "ip_addresses": [
+                    {
+                      "protocol": "IPv4",
+                      "ip_address": "OLD IP ADDRESS"
+                    }
+                  ]
+                }
+              ],
+              "executor_pid": 29866
+            }
+          },
+          {
+            "task_id": {
+              "value": "test-host-mode.instance-e465ae75-993b-11e9-83f2-06bbd400330a._app.36"
+            },
+            "state": "TASK_RUNNING",
+            "source": "SOURCE_EXECUTOR",
+            "agent_id": {
+              "value": "6bd07876-31d8-4c11-b94c-e4dd51915ae3-S1"
+            },
+            "executor_id": {
+              "value": "test-host-mode.instance-e465ae75-993b-11e9-83f2-06bbd400330a._app.36"
+            },
+            "timestamp": 1562114118.7132318,
+            "uuid": "yt3+jL8iSyKwHmMeOlN2Ig==",
+            "container_status": {
+              "container_id": {
+                "value": "host-123"
+              },
+              "network_infos": [
+                {
+                  "ip_addresses": [
+                    {
+                      "protocol": "IPv4",
+                      "ip_address": "198.0.2.1"
+                    }
+                  ]
+                }
+              ],
+              "executor_pid": 29866
+            }
+          }
+        ],
+        "status_update_state": "TASK_RUNNING",
+        "status_update_uuid": "yt3+jL8iSyKwHmMeOlN2Ig==",
+        "labels": {
+          "labels": [
+            {
+              "key": "DCOS_SPACE",
+              "value": "/test-host-mode"
+            }
+          ]
+        },
+        "discovery": {
+          "visibility": "FRAMEWORK",
+          "name": "test-host-mode",
+          "ports": {
+            "ports": [
+              {
+                "number": 7070,
+                "name": "http",
+                "protocol": "tcp",
+                "labels": {
+                  "labels": [
+                    {
+                      "key": "DCOS_METRICS_FORMAT",
+                      "value": "prometheus"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "container": {
+          "type": "MESOS",
+          "mesos": {}
+        }
+      },
+      {
+        "name": "test-container-mode",
+        "task_id": {
+          "value": "test-container-mode.instance-e8314b83-9932-11e9-83f2-06bbd400330a._app.1"
+        },
+        "framework_id": {
+          "value": "6bd07876-31d8-4c11-b94c-e4dd51915ae3-0001"
+        },
+        "agent_id": {
+          "value": "6bd07876-31d8-4c11-b94c-e4dd51915ae3-S1"
+        },
+        "state": "TASK_RUNNING",
+        "resources": [
+          {
+            "name": "cpus",
+            "type": "SCALAR",
+            "scalar": {
+              "value": 0.1
+            },
+            "allocation_info": {
+              "role": "slave_public"
+            }
+          },
+          {
+            "name": "mem",
+            "type": "SCALAR",
+            "scalar": {
+              "value": 128
+            },
+            "allocation_info": {
+              "role": "slave_public"
+            }
+          }
+        ],
+        "statuses": [
+          {
+            "task_id": {
+              "value": "test-container-mode.instance-e8314b83-9932-11e9-83f2-06bbd400330a._app.1"
+            },
+            "state": "TASK_STARTING",
+            "source": "SOURCE_EXECUTOR",
+            "agent_id": {
+              "value": "6bd07876-31d8-4c11-b94c-e4dd51915ae3-S1"
+            },
+            "executor_id": {
+              "value": "test-container-mode.instance-e8314b83-9932-11e9-83f2-06bbd400330a._app.1"
+            },
+            "timestamp": 1561677966.208982,
+            "uuid": "ANdwJ6+BTkGXJNn5EOwiEw==",
+            "container_status": {
+              "container_id": {
+                "value": "container-123"
+              },
+              "network_infos": [
+                {
+                  "ip_addresses": [
+                    {
+                      "protocol": "IPv4",
+                      "ip_address": "OLD IP ADDRESS"
+                    }
+                  ],
+                  "name": "calico",
+                  "labels": {
+                    "labels": [
+                      {
+                        "key": "role",
+                        "value": "test-container-mode"
+                      },
+                      {
+                        "key": "DCOS_SPACE",
+                        "value": "/test-container-mode"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "executor_pid": 19271
+            }
+          },
+          {
+            "task_id": {
+              "value": "test-container-mode.instance-e8314b83-9932-11e9-83f2-06bbd400330a._app.1"
+            },
+            "state": "TASK_RUNNING",
+            "source": "SOURCE_EXECUTOR",
+            "agent_id": {
+              "value": "6bd07876-31d8-4c11-b94c-e4dd51915ae3-S1"
+            },
+            "executor_id": {
+              "value": "test-container-mode.instance-e8314b83-9932-11e9-83f2-06bbd400330a._app.1"
+            },
+            "timestamp": 1561677966.2129211,
+            "uuid": "piNs2w9sSn2ql6Qw94eBjw==",
+            "container_status": {
+              "container_id": {
+                "value": "container-123"
+              },
+              "network_infos": [
+                {
+                  "ip_addresses": [
+                    {
+                      "protocol": "IPv4",
+                      "ip_address": "198.0.2.3"
+                    }
+                  ],
+                  "name": "calico",
+                  "labels": {
+                    "labels": [
+                      {
+                        "key": "role",
+                        "value": "test-container-mode"
+                      },
+                      {
+                        "key": "DCOS_SPACE",
+                        "value": "/test-container-mode"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "executor_pid": 19271
+            }
+          }
+        ],
+        "status_update_state": "TASK_RUNNING",
+        "status_update_uuid": "piNs2w9sSn2ql6Qw94eBjw==",
+        "labels": {
+          "labels": [
+            {
+              "key": "DCOS_SPACE",
+              "value": "/test-container-mode"
+            }
+          ]
+        },
+        "discovery": {
+          "visibility": "FRAMEWORK",
+          "name": "test-container-mode",
+          "ports": {
+            "ports": [
+              {
+                "number": 9090,
+                "name": "prometheus",
+                "protocol": "tcp",
+                "labels": {
+                  "labels": [
+                    {
+                      "key": "DCOS_METRICS_FORMAT",
+                      "value": "prometheus"
+                    },
+                    {
+                      "key": "network-scope",
+                      "value": "container"
+                    },
+                    {
+                      "key": "network-name",
+                      "value": "calico"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "container": {
+          "type": "MESOS",
+          "mesos": {
+            "image": {
+              "type": "DOCKER",
+              "docker": {
+                "name": "python:3"
+              },
+              "cached": true
+            }
+          },
+          "network_infos": [
+            {
+              "ip_addresses": [
+                {
+                  "protocol": "IPv4"
+                }
+              ],
+              "name": "calico",
+              "labels": {
+                "labels": [
+                  {
+                    "key": "role",
+                    "value": "test-container-mode"
+                  },
+                  {
+                    "key": "DCOS_SPACE",
+                    "value": "/test-container-mode"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "test-bridged-mode",
+        "task_id": {
+          "value": "test-bridged-mode.instance-8a6f2224-993b-11e9-83f2-06bbd400330a._app.1"
+        },
+        "framework_id": {
+          "value": "6bd07876-31d8-4c11-b94c-e4dd51915ae3-0001"
+        },
+        "agent_id": {
+          "value": "6bd07876-31d8-4c11-b94c-e4dd51915ae3-S0"
+        },
+        "state": "TASK_RUNNING",
+        "resources": [
+          {
+            "name": "cpus",
+            "type": "SCALAR",
+            "scalar": {
+              "value": 0.1
+            },
+            "allocation_info": {
+              "role": "slave_public"
+            }
+          },
+          {
+            "name": "mem",
+            "type": "SCALAR",
+            "scalar": {
+              "value": 128
+            },
+            "allocation_info": {
+              "role": "slave_public"
+            }
+          },
+          {
+            "name": "ports",
+            "type": "RANGES",
+            "ranges": {
+              "range": [
+                {
+                  "begin": 4218,
+                  "end": 4218
+                }
+              ]
+            },
+            "allocation_info": {
+              "role": "slave_public"
+            }
+          }
+        ],
+        "statuses": [
+          {
+            "task_id": {
+              "value": "test-bridged-mode.instance-8a6f2224-993b-11e9-83f2-06bbd400330a._app.1"
+            },
+            "state": "TASK_STARTING",
+            "source": "SOURCE_EXECUTOR",
+            "agent_id": {
+              "value": "6bd07876-31d8-4c11-b94c-e4dd51915ae3-S0"
+            },
+            "executor_id": {
+              "value": "test-bridged-mode.instance-8a6f2224-993b-11e9-83f2-06bbd400330a._app.1"
+            },
+            "timestamp": 1561681663.182626,
+            "uuid": "5ySrlg/bQ/2MecJsYF/tIQ==",
+            "container_status": {
+              "container_id": {
+                "value": "bridge-123"
+              },
+              "network_infos": [
+                {
+                  "ip_addresses": [
+                    {
+                      "protocol": "IPv4",
+                      "ip_address": "OLD IP ADDRESS"
+                    }
+                  ],
+                  "name": "mesos-bridge",
+                  "labels": {
+                    "labels": [
+                      {
+                        "key": "DCOS_SPACE",
+                        "value": "/test-bridged-mode"
+                      }
+                    ]
+                  },
+                  "port_mappings": [
+                    {
+                      "host_port": 4218,
+                      "container_port": 8080,
+                      "protocol": "tcp"
+                    }
+                  ]
+                }
+              ],
+              "executor_pid": 27754
+            }
+          },
+          {
+            "task_id": {
+              "value": "test-bridged-mode.instance-8a6f2224-993b-11e9-83f2-06bbd400330a._app.1"
+            },
+            "state": "TASK_RUNNING",
+            "source": "SOURCE_EXECUTOR",
+            "agent_id": {
+              "value": "6bd07876-31d8-4c11-b94c-e4dd51915ae3-S0"
+            },
+            "executor_id": {
+              "value": "test-bridged-mode.instance-8a6f2224-993b-11e9-83f2-06bbd400330a._app.1"
+            },
+            "timestamp": 1561681663.185781,
+            "uuid": "rvjfPIHuRriCsG9YZrxj0g==",
+            "container_status": {
+              "container_id": {
+                "value": "bridge-123"
+              },
+              "network_infos": [
+                {
+                  "ip_addresses": [
+                    {
+                      "protocol": "IPv4",
+                      "ip_address": "198.0.2.2"
+                    }
+                  ],
+                  "name": "mesos-bridge",
+                  "labels": {
+                    "labels": [
+                      {
+                        "key": "DCOS_SPACE",
+                        "value": "/test-bridged-mode"
+                      }
+                    ]
+                  },
+                  "port_mappings": [
+                    {
+                      "host_port": 4218,
+                      "container_port": 8080,
+                      "protocol": "tcp"
+                    }
+                  ]
+                }
+              ],
+              "executor_pid": 27754
+            }
+          }
+        ],
+        "status_update_state": "TASK_RUNNING",
+        "status_update_uuid": "rvjfPIHuRriCsG9YZrxj0g==",
+        "labels": {
+          "labels": [
+            {
+              "key": "DCOS_SPACE",
+              "value": "/test-bridged-mode"
+            }
+          ]
+        },
+        "discovery": {
+          "visibility": "FRAMEWORK",
+          "name": "test-bridged-mode",
+          "ports": {
+            "ports": [
+              {
+                "number": 8080,
+                "name": "http",
+                "protocol": "tcp",
+                "labels": {
+                  "labels": [
+                    {
+                      "key": "DCOS_METRICS_FORMAT",
+                      "value": "prometheus"
+                    },
+                    {
+                      "key": "network-scope",
+                      "value": "host"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "container": {
+          "type": "MESOS",
+          "mesos": {},
+          "network_infos": [
+            {
+              "ip_addresses": [
+                {
+                  "protocol": "IPv4"
+                }
+              ],
+              "name": "mesos-bridge",
+              "labels": {
+                "labels": [
+                  {
+                    "key": "DCOS_SPACE",
+                    "value": "/test-bridged-mode"
+                  }
+                ]
+              },
+              "port_mappings": [
+                {
+                  "host_port": 8080,
+                  "container_port": 8080,
+                  "protocol": "tcp"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "completed_tasks": []
+  }
+}

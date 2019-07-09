@@ -106,52 +106,69 @@ func TestPrometheusGeneratesMetricsAlthoughFirstDNSFails(t *testing.T) {
 }
 
 func TestPrometheusGathersMesosMetrics(t *testing.T) {
-	// The mock mesos server listens on 127.0.0.1
-	metricsUrl, _ := url.Parse("http://127.0.0.1:12345/metrics")
-	federateUrl, _ := url.Parse("http://127.0.0.1:12345/federate")
 	testCases := map[string]map[string]URLAndAddress{
 		"empty":                    {},
 		"malformedTaskLabelIndex":  {},
 		"taskLabelIndexOutOfRange": {},
 		"wrongPortName":            {},
 		"portlabel": {
-			metricsUrl.String(): {
-				URL:         metricsUrl,
-				OriginalURL: metricsUrl,
+			"http://127.0.0.1:12345/metrics": {
+				URL:         unsafelyParse("http://127.0.0.1:12345/metrics"),
+				OriginalURL: unsafelyParse("http://127.0.0.1:12345/metrics"),
 				Tags:        map[string]string{"container_id": "abc-123"},
 			},
-			federateUrl.String(): {
-				URL:         federateUrl,
-				OriginalURL: federateUrl,
+			"http://127.0.0.1:12345/federate": {
+				URL:         unsafelyParse("http://127.0.0.1:12345/federate"),
+				OriginalURL: unsafelyParse("http://127.0.0.1:12345/federate"),
 				Tags:        map[string]string{"container_id": "xyz-123"},
 			},
 		},
 		"tasklabelViaIndex": {
-			metricsUrl.String(): {
-				URL:         metricsUrl,
-				OriginalURL: metricsUrl,
+			"http://127.0.0.1:12345/metrics": {
+				URL:         unsafelyParse("http://127.0.0.1:12345/metrics"),
+				OriginalURL: unsafelyParse("http://127.0.0.1:12345/metrics"),
 				Tags:        map[string]string{"container_id": "abc-123"},
 			},
 		},
 		"tasklabelViaName": {
-			metricsUrl.String(): {
-				URL:         metricsUrl,
-				OriginalURL: metricsUrl,
+			"http://127.0.0.1:12345/metrics": {
+				URL:         unsafelyParse("http://127.0.0.1:12345/metrics"),
+				OriginalURL: unsafelyParse("http://127.0.0.1:12345/metrics"),
 				Tags:        map[string]string{"container_id": "abc-123"},
 			},
 		},
 		"tasklabelIndexPriority": {
-			metricsUrl.String(): {
-				URL:         metricsUrl,
-				OriginalURL: metricsUrl,
+			"http://127.0.0.1:12345/metrics": {
+				URL:         unsafelyParse("http://127.0.0.1:12345/metrics"),
+				OriginalURL: unsafelyParse("http://127.0.0.1:12345/metrics"),
 				Tags:        map[string]string{"container_id": "abc-123"},
 			},
 		},
 		"tasklabelAlternatePath": {
-			federateUrl.String(): {
-				URL:         federateUrl,
-				OriginalURL: federateUrl,
+			"http://127.0.0.1:12345/federate": {
+				URL:         unsafelyParse("http://127.0.0.1:12345/federate"),
+				OriginalURL: unsafelyParse("http://127.0.0.1:12345/federate"),
 				Tags:        map[string]string{"container_id": "abc-123"},
+			},
+		},
+		"networkModes": {
+			// Host mode should use hostname:port
+			"http://127.0.0.1:7070/metrics": {
+				URL:         unsafelyParse("http://127.0.0.1:7070/metrics"),
+				OriginalURL: unsafelyParse("http://127.0.0.1:7070/metrics"),
+				Tags:        map[string]string{"container_id": "host-123"},
+			},
+			// Bridge mode should use hostname:mapped-port (not hostname:container-port)
+			"http://127.0.0.1:8080/metrics": {
+				URL:         unsafelyParse("http://127.0.0.1:8080/metrics"),
+				OriginalURL: unsafelyParse("http://127.0.0.1:8080/metrics"),
+				Tags:        map[string]string{"container_id": "bridge-123"},
+			},
+			// Container mode should use task-ip:container-port
+			"http://198.0.2.3:9090/metrics": {
+				URL:         unsafelyParse("http://198.0.2.3:9090/metrics"),
+				OriginalURL: unsafelyParse("http://198.0.2.3:9090/metrics"),
+				Tags:        map[string]string{"container_id": "container-123"},
 			},
 		},
 	}
@@ -197,4 +214,10 @@ func TestGetMesosHostname(t *testing.T) {
 		_, err := getMesosHostname(input)
 		assert.NotNil(t, err)
 	}
+}
+
+// unsafelyParse is a utility method that ignores errors from url.Parse
+func unsafelyParse(u string) *url.URL {
+	result, _ := url.Parse(u)
+	return result
 }

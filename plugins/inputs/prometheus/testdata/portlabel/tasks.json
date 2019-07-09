@@ -185,7 +185,7 @@
                   "ip_addresses": [
                     {
                       "protocol": "IPv4",
-                      "ip_address": "172.31.254.14"
+                      "ip_address": "198.2.0.1"
                     }
                   ],
                   "name": "mesos-bridge",
@@ -321,7 +321,7 @@
                   "ip_addresses": [
                     {
                       "protocol": "IPv4",
-                      "ip_address": "172.31.254.14"
+                      "ip_address": "198.2.0.2"
                     }
                   ],
                   "name": "mesos-bridge",
