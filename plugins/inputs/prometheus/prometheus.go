@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -61,8 +60,7 @@ type Prometheus struct {
 	cancel         context.CancelFunc
 	wg             sync.WaitGroup
 
-	mesosClient   *httpcli.Client
-	mesosHostname string
+	mesosClient *httpcli.Client
 }
 
 var sampleConfig = `
@@ -357,14 +355,6 @@ func (p *Prometheus) gatherURL(u URLAndAddress, acc telegraf.Accumulator) error 
 // Start will start the Kubernetes scraping if enabled in the configuration
 func (p *Prometheus) Start(a telegraf.Accumulator) error {
 	// Check that the mesos agent url is well-formed
-	if p.MesosAgentUrl != "" {
-		// gofmt prevents us using := assignment below, hence declaration
-		var err error
-		p.mesosHostname, err = getMesosHostname(p.MesosAgentUrl)
-		if err != nil {
-			return fmt.Errorf("the mesos agent URL was malformed: %s", err)
-		}
-	}
 	if p.MonitorPods {
 		var ctx context.Context
 		ctx, p.cancel = context.WithCancel(context.Background())
@@ -378,24 +368,6 @@ func (p *Prometheus) Stop() {
 		p.cancel()
 	}
 	p.wg.Wait()
-}
-
-// getMesosHostname extracts the node's hostname from the mesos agent url
-func getMesosHostname(mesosAgentUrl string) (string, error) {
-	u, err := url.Parse(mesosAgentUrl)
-	if err != nil {
-		return "", err
-	}
-	hostname := u.Host
-
-	// SplitHostPort will error if passed an input with no port
-	if strings.ContainsRune(hostname, ':') {
-		hostname, _, err = net.SplitHostPort(hostname)
-	}
-	if hostname == "" {
-		return hostname, fmt.Errorf("could not extract hostname from: %s", mesosAgentUrl)
-	}
-	return hostname, err
 }
 
 // getMesosClient returns an httpcli client configured with the available levels of
