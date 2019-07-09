@@ -112,56 +112,59 @@ func TestPrometheusGathersMesosMetrics(t *testing.T) {
 		"taskLabelIndexOutOfRange": {},
 		"wrongPortName":            {},
 		"portlabel": {
-			"http://198.2.0.1:12345/metrics": {
-				URL:         unsafelyParse("http://198.2.0.1:12345/metrics"),
-				OriginalURL: unsafelyParse("http://198.2.0.1:12345/metrics"),
+			"http://127.0.0.1:12345/metrics": {
+				URL:         unsafelyParse("http://127.0.0.1:12345/metrics"),
+				OriginalURL: unsafelyParse("http://127.0.0.1:12345/metrics"),
 				Tags:        map[string]string{"container_id": "abc-123"},
 			},
-			"http://198.2.0.2:12345/federate": {
-				URL:         unsafelyParse("http://198.2.0.2:12345/federate"),
-				OriginalURL: unsafelyParse("http://198.2.0.2:12345/federate"),
+			"http://127.0.0.1:12345/federate": {
+				URL:         unsafelyParse("http://127.0.0.1:12345/federate"),
+				OriginalURL: unsafelyParse("http://127.0.0.1:12345/federate"),
 				Tags:        map[string]string{"container_id": "xyz-123"},
 			},
 		},
 		"tasklabelViaIndex": {
-			"http://198.2.0.1:12345/metrics": {
-				URL:         unsafelyParse("http://198.2.0.1:12345/metrics"),
-				OriginalURL: unsafelyParse("http://198.2.0.1:12345/metrics"),
+			"http://127.0.0.1:12345/metrics": {
+				URL:         unsafelyParse("http://127.0.0.1:12345/metrics"),
+				OriginalURL: unsafelyParse("http://127.0.0.1:12345/metrics"),
 				Tags:        map[string]string{"container_id": "abc-123"},
 			},
 		},
 		"tasklabelViaName": {
-			"http://198.2.0.1:12345/metrics": {
-				URL:         unsafelyParse("http://198.2.0.1:12345/metrics"),
-				OriginalURL: unsafelyParse("http://198.2.0.1:12345/metrics"),
+			"http://127.0.0.1:12345/metrics": {
+				URL:         unsafelyParse("http://127.0.0.1:12345/metrics"),
+				OriginalURL: unsafelyParse("http://127.0.0.1:12345/metrics"),
 				Tags:        map[string]string{"container_id": "abc-123"},
 			},
 		},
 		"tasklabelIndexPriority": {
-			"http://198.2.0.1:12345/metrics": {
-				URL:         unsafelyParse("http://198.2.0.1:12345/metrics"),
-				OriginalURL: unsafelyParse("http://198.2.0.1:12345/metrics"),
+			"http://127.0.0.1:12345/metrics": {
+				URL:         unsafelyParse("http://127.0.0.1:12345/metrics"),
+				OriginalURL: unsafelyParse("http://127.0.0.1:12345/metrics"),
 				Tags:        map[string]string{"container_id": "abc-123"},
 			},
 		},
 		"tasklabelAlternatePath": {
-			"http://198.2.0.1:12345/federate": {
-				URL:         unsafelyParse("http://198.2.0.1:12345/federate"),
-				OriginalURL: unsafelyParse("http://198.2.0.1:12345/federate"),
+			"http://127.0.0.1:12345/federate": {
+				URL:         unsafelyParse("http://127.0.0.1:12345/federate"),
+				OriginalURL: unsafelyParse("http://127.0.0.1:12345/federate"),
 				Tags:        map[string]string{"container_id": "abc-123"},
 			},
 		},
 		"networkModes": {
-			"http://198.0.2.1:7070/metrics": {
-				URL:         unsafelyParse("http://198.0.2.1:7070/metrics"),
-				OriginalURL: unsafelyParse("http://198.0.2.1:7070/metrics"),
+			// Host mode should use hostname:port
+			"http://127.0.0.1:7070/metrics": {
+				URL:         unsafelyParse("http://127.0.0.1:7070/metrics"),
+				OriginalURL: unsafelyParse("http://127.0.0.1:7070/metrics"),
 				Tags:        map[string]string{"container_id": "host-123"},
 			},
-			"http://198.0.2.2:8080/metrics": {
-				URL:         unsafelyParse("http://198.0.2.2:8080/metrics"),
-				OriginalURL: unsafelyParse("http://198.0.2.2:8080/metrics"),
+			// Bridge mode should use hostname:mapped-port (not hostname:container-port)
+			"http://127.0.0.1:8080/metrics": {
+				URL:         unsafelyParse("http://127.0.0.1:8080/metrics"),
+				OriginalURL: unsafelyParse("http://127.0.0.1:8080/metrics"),
 				Tags:        map[string]string{"container_id": "bridge-123"},
 			},
+			// Container mode should use task-ip:container-port
 			"http://198.0.2.3:9090/metrics": {
 				URL:         unsafelyParse("http://198.0.2.3:9090/metrics"),
 				OriginalURL: unsafelyParse("http://198.0.2.3:9090/metrics"),
