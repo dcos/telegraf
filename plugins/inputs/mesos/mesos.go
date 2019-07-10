@@ -820,8 +820,7 @@ func (m *Mesos) gatherMainMetrics(u *url.URL, role Role, acc telegraf.Accumulato
 
 	for metricName, val := range jf.Fields {
 		if !strings.HasPrefix(metricName, "master/frameworks/") &&
-			!strings.HasPrefix(metricName, "allocator/") &&
-			!strings.HasPrefix(metricName, "overlay/") {
+			!strings.HasPrefix(metricName, "allocator/") {
 			continue
 		}
 
@@ -842,10 +841,6 @@ func (m *Mesos) gatherMainMetrics(u *url.URL, role Role, acc telegraf.Accumulato
 			// All allocator metrics with <= 5 parts can be sent as is and does not pull
 			// any params out into tags.
 			// (e.g. allocator/mesos/allocation_run_ms/count vs allocator/mesos/roles/<role>/shares/dominant)
-			continue
-		}
-		if parts[0] == "overlay" && len(parts) < 3 {
-			// All overlay metrics have at least 3 parts.
 			continue
 		}
 
