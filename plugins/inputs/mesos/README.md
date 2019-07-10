@@ -308,7 +308,7 @@ Mesos master metric groups
     - allocator/resources/mem/offered_or_allocated
     - allocator/resources/mem/total
 
-- overlay
+- [overlay](https://github.com/dcos/dcos-mesos-modules/blob/master/overlay/master_metrics.hpp)
     - overlay/master/process_restarts
     - overlay/master/log/ensemble_size
     - overlay/master/log/recovered
@@ -391,7 +391,7 @@ Mesos slave metric groups
     - slave/valid_framework_messages
     - slave/valid_status_updates
 
-- overlay
+- [overlay](https://github.com/dcos/dcos-mesos-modules/blob/master/overlay/agent_metrics.hpp)
     - overlay/slave/registering
     - overlay/slave/overlay_config_failed
     - overlay/slave/overlay_config_failures

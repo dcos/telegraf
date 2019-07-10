@@ -562,6 +562,7 @@ func getMetrics(role Role, group string) []string {
 			"registrar/state_store_ms/p9999",
 		}
 
+		// https://github.com/dcos/dcos-mesos-modules/blob/master/overlay/master_metrics.hpp
 		m["overlay"] = []string{
 			"overlay/master/process_restarts",
 			"overlay/master/log/ensemble_size",
@@ -651,6 +652,7 @@ func getMetrics(role Role, group string) []string {
 			"slave/valid_status_updates",
 		}
 
+		// https://github.com/dcos/dcos-mesos-modules/blob/master/overlay/agent_metrics.hpp
 		m["overlay"] = []string{
 			"overlay/slave/registering",
 			"overlay/slave/overlay_config_failed",
