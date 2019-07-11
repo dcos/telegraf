@@ -116,8 +116,8 @@ func (tf TaggedField) tags() fieldTags {
 }
 
 var allMetrics = map[Role][]string{
-	MASTER: {"resources", "master", "system", "agents", "frameworks", "framework_offers", "tasks", "operations", "messages", "evqueue", "registrar", "allocator"},
-	SLAVE:  {"resources", "agent", "system", "executors", "tasks", "messages"},
+	MASTER: {"resources", "master", "system", "agents", "frameworks", "framework_offers", "tasks", "operations", "messages", "evqueue", "registrar", "allocator", "overlay"},
+	SLAVE:  {"resources", "agent", "system", "executors", "tasks", "messages", "overlay"},
 }
 
 var sampleConfig = `
@@ -139,6 +139,7 @@ var sampleConfig = `
     "evqueue",
     "registrar",
     "allocator",
+    "overlay",
   ]
   ## A list of Mesos slaves, default is []
   # slaves = []
@@ -150,6 +151,7 @@ var sampleConfig = `
   #   "executors",
   #   "tasks",
   #   "messages",
+  #   "overlay",
   # ]
   ## The user agent to send with requests
   user_agent = "Telegraf-mesos"
@@ -559,6 +561,25 @@ func getMetrics(role Role, group string) []string {
 			"registrar/state_store_ms/p999",
 			"registrar/state_store_ms/p9999",
 		}
+
+		// https://github.com/dcos/dcos-mesos-modules/blob/master/overlay/master_metrics.hpp
+		m["overlay"] = []string{
+			"overlay/master/process_restarts",
+			"overlay/master/log/ensemble_size",
+			"overlay/master/log/recovered",
+			"overlay/master/recovering",
+			"overlay/master/ip_allocation_failures",
+			"overlay/master/ip6_allocation_failures",
+			"overlay/master/subnet_allocation_failures",
+			"overlay/master/subnet6_allocation_failures",
+			"overlay/master/bridge_allocation_failures",
+			"overlay/master/internal/register_agent_messages_received",
+			"overlay/master/internal/register_agent_messages_dropped",
+			"overlay/master/internal/update_agent_overlays_messages_sent",
+			"overlay/master/internal/agent_registered_messages_received",
+			"overlay/master/internal/agent_registered_messages_dropped",
+			"overlay/master/internal/agent_registered_acknowledgements_sent",
+		}
 	} else if role == SLAVE {
 		m["resources"] = []string{
 			"slave/cpus_percent",
@@ -629,6 +650,22 @@ func getMetrics(role Role, group string) []string {
 			"slave/invalid_status_updates",
 			"slave/valid_framework_messages",
 			"slave/valid_status_updates",
+		}
+
+		// https://github.com/dcos/dcos-mesos-modules/blob/master/overlay/agent_metrics.hpp
+		m["overlay"] = []string{
+			"overlay/slave/registering",
+			"overlay/slave/overlay_config_failed",
+			"overlay/slave/overlay_config_failures",
+			"overlay/slave/overlays_without_subnets",
+			"overlay/slave/docker_cmd_failures",
+			"overlay/slave/internal/register_agent_messages_sent",
+			"overlay/slave/internal/update_agent_overlays_messages_received",
+			"overlay/slave/internal/update_agent_overlays_messages_dropped",
+			"overlay/slave/internal/agent_registered_messages_sent",
+			"overlay/slave/internal/agent_registered_messages_dropped",
+			"overlay/slave/internal/agent_registered_acknowledgements_received",
+			"overlay/slave/internal/agent_registered_acknowledgements_dropped",
 		}
 	}
 
@@ -782,7 +819,8 @@ func (m *Mesos) gatherMainMetrics(u *url.URL, role Role, acc telegraf.Accumulato
 	extraTags := map[string]fieldTags{}
 
 	for metricName, val := range jf.Fields {
-		if !strings.HasPrefix(metricName, "master/frameworks/") && !strings.HasPrefix(metricName, "allocator/") {
+		if !strings.HasPrefix(metricName, "master/frameworks/") &&
+			!strings.HasPrefix(metricName, "allocator/") {
 			continue
 		}
 
@@ -794,8 +832,12 @@ func (m *Mesos) gatherMainMetrics(u *url.URL, role Role, acc telegraf.Accumulato
 		}
 
 		parts := strings.Split(metricName, "/")
-		if (parts[0] == "master" && len(parts) < 5) || (parts[0] == "allocator" && len(parts) <= 5) {
+
+		if parts[0] == "master" && len(parts) < 5 {
 			// All framework offers metrics have at least 5 parts.
+			continue
+		}
+		if parts[0] == "allocator" && len(parts) <= 5 {
 			// All allocator metrics with <= 5 parts can be sent as is and does not pull
 			// any params out into tags.
 			// (e.g. allocator/mesos/allocation_run_ms/count vs allocator/mesos/roles/<role>/shares/dominant)
