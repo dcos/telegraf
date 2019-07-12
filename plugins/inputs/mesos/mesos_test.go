@@ -445,7 +445,7 @@ func TestMesosMaster(t *testing.T) {
 
 	m := Mesos{
 		Masters: []string{masterTestServer.Listener.Addr().String()},
-		Timeout: 10,
+		Timeout: 500,
 	}
 
 	err := acc.GatherError(m.Gather)
@@ -652,7 +652,7 @@ func TestMesosSlave(t *testing.T) {
 		Masters: []string{},
 		Slaves:  []string{slaveTestServer.Listener.Addr().String()},
 		// SlaveTasks: true,
-		Timeout: 10,
+		Timeout: 500,
 	}
 
 	err := acc.GatherError(m.Gather)
