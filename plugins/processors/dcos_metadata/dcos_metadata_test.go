@@ -315,8 +315,8 @@ var (
 func TestApply(t *testing.T) {
 	for _, tc := range TEST_CASES {
 		t.Run(tc.fixture, func(t *testing.T) {
-			server, teardown := startTestServer(t, tc.fixture)
-			defer teardown()
+			server := startTestServer(t, tc.fixture)
+			defer server.Close()
 
 			dm := DCOSMetadata{
 				MesosAgentUrl:   server.URL,
