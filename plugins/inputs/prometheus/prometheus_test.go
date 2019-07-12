@@ -178,7 +178,7 @@ func TestPrometheusGathersMesosMetrics(t *testing.T) {
 			defer server.Close()
 
 			p := &Prometheus{
-				MesosTimeout:  internal.Duration{Duration: 100 * time.Millisecond},
+				MesosTimeout:  internal.Duration{Duration: 500 * time.Millisecond},
 				MesosAgentUrl: server.URL,
 				// mesosHostname is assigned in Start()
 				mesosHostname: "127.0.0.1",
