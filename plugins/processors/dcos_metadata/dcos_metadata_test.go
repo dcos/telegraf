@@ -315,12 +315,12 @@ var (
 func TestApply(t *testing.T) {
 	for _, tc := range TEST_CASES {
 		t.Run(tc.fixture, func(t *testing.T) {
-			server, teardown := startTestServer(t, tc.fixture)
-			defer teardown()
+			server := startTestServer(t, tc.fixture)
+			defer server.Close()
 
 			dm := DCOSMetadata{
 				MesosAgentUrl:   server.URL,
-				Timeout:         internal.Duration{Duration: 100 * time.Millisecond},
+				Timeout:         internal.Duration{Duration: 500 * time.Millisecond},
 				RateLimit:       internal.Duration{Duration: 50 * time.Millisecond},
 				Whitelist:       tc.whitelist,
 				WhitelistPrefix: tc.whitelistPrefix,
