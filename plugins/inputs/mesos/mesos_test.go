@@ -521,6 +521,7 @@ func TestMesosMaster(t *testing.T) {
 			"role":           "master",
 			"state":          "leader",
 			"framework_name": "framework name",
+			"framework_id":   "abc-123",
 		},
 		{
 			"server":         m.masterURLs[0].Hostname(),
@@ -528,6 +529,7 @@ func TestMesosMaster(t *testing.T) {
 			"role":           "master",
 			"state":          "leader",
 			"framework_name": "framework name",
+			"framework_id":   "abc-123",
 			"task_state":     "task_killing",
 		},
 		{
@@ -536,6 +538,7 @@ func TestMesosMaster(t *testing.T) {
 			"role":           "master",
 			"state":          "leader",
 			"framework_name": "framework name",
+			"framework_id":   "abc-123",
 			"task_state":     "task_dropped",
 		},
 		{
@@ -544,6 +547,7 @@ func TestMesosMaster(t *testing.T) {
 			"role":           "master",
 			"state":          "leader",
 			"framework_name": "framework name",
+			"framework_id":   "abc-123",
 			"role_name":      "*",
 		},
 		{
@@ -552,6 +556,7 @@ func TestMesosMaster(t *testing.T) {
 			"role":           "master",
 			"state":          "leader",
 			"framework_name": "framework name",
+			"framework_id":   "abc-123",
 			"call_type":      "accept",
 		},
 		{
@@ -560,6 +565,7 @@ func TestMesosMaster(t *testing.T) {
 			"role":           "master",
 			"state":          "leader",
 			"framework_name": "framework name",
+			"framework_id":   "abc-123",
 			"event_type":     "error",
 		},
 		{
@@ -568,6 +574,7 @@ func TestMesosMaster(t *testing.T) {
 			"role":           "master",
 			"state":          "leader",
 			"framework_name": "framework name",
+			"framework_id":   "abc-123",
 			"operation_type": "create",
 		},
 		// allocator
