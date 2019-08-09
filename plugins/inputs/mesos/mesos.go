@@ -47,6 +47,7 @@ type Mesos struct {
 // combination of tags
 type TaggedField struct {
 	FrameworkName string
+	FrameworkId   string
 	CallType      string
 	EventType     string
 	OperationType string
@@ -62,6 +63,9 @@ func (tf TaggedField) hash() string {
 
 	if tf.FrameworkName != "" {
 		buffer += "_fn:" + tf.FrameworkName
+	}
+	if tf.FrameworkId != "" {
+		buffer += "_fi:" + tf.FrameworkId
 	}
 	if tf.CallType != "" {
 		buffer += "_ct:" + tf.CallType
@@ -92,6 +96,9 @@ func (tf TaggedField) tags() fieldTags {
 
 	if tf.FrameworkName != "" {
 		tags["framework_name"] = tf.FrameworkName
+	}
+	if tf.FrameworkId != "" {
+		tags["framework_id"] = tf.FrameworkId
 	}
 	if tf.CallType != "" {
 		tags["call_type"] = tf.CallType
@@ -888,6 +895,7 @@ func generateTaggedField(parts []string) TaggedField {
 	if parts[0] == "master" {
 		// Mesos encodes framework names in metrics responses.
 		tf.FrameworkName = decodeFrameworkName(parts[2])
+		tf.FrameworkId = parts[3]
 		if len(parts) == 5 {
 			// e.g. /master/frameworks/calls_total
 			tf.FieldName = fmt.Sprintf("%s/%s/%s_total", parts[0], parts[1], parts[4])
