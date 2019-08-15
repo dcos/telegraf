@@ -3,7 +3,7 @@ swagger: "2.0"
 info:
   description: "Telegraf plugin for DC/OS which receives statsd from a mesos module"
   version: "1.0.0"
-  title: "dcos_statsd telegraf plugin"
+  title: "mesos_statsd telegraf plugin"
   contact:
     email: "philip@mesosphere.io"
   license:

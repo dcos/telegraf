@@ -1,4 +1,4 @@
-package dcos_statsd
+package mesos_statsd
 
 import (
 	"context"
@@ -19,8 +19,8 @@ import (
 	"github.com/influxdata/telegraf"
 	"github.com/influxdata/telegraf/internal"
 	"github.com/influxdata/telegraf/plugins/inputs"
-	"github.com/influxdata/telegraf/plugins/inputs/dcos_statsd/api"
-	"github.com/influxdata/telegraf/plugins/inputs/dcos_statsd/containers"
+	"github.com/influxdata/telegraf/plugins/inputs/mesos_statsd/api"
+	"github.com/influxdata/telegraf/plugins/inputs/mesos_statsd/containers"
 	"github.com/influxdata/telegraf/plugins/inputs/statsd"
 )
 
@@ -28,14 +28,14 @@ const sampleConfig = `
 ## The address on which the command API should listen
 listen = ":8888"
 ## The directory in which container information is stored
-containers_dir = "/run/dcos/telegraf/dcos_statsd/containers"
+containers_dir = "/run/telegraf/mesos_statsd/containers"
 ## The period after which requests to the API should time out
 timeout = "15s"
 ## The hostname or IP address on which to host statsd servers
 statsd_host = "198.51.100.1"
 `
 
-type DCOSStatsd struct {
+type MesosStatsd struct {
 	// Listen is the address on which the command API listens. It can be a
 	// host:port pair, or the path to a unix socket
 	Listen string
@@ -49,17 +49,17 @@ type DCOSStatsd struct {
 }
 
 // SampleConfig returns the default configuration
-func (ds *DCOSStatsd) SampleConfig() string {
+func (ds *MesosStatsd) SampleConfig() string {
 	return sampleConfig
 }
 
-// Description returns a one-sentence description of dcos_statsd
-func (ds *DCOSStatsd) Description() string {
+// Description returns a one-sentence description of mesos_statsd
+func (ds *MesosStatsd) Description() string {
 	return "Plugin for monitoring statsd metrics from mesos tasks"
 }
 
 // Start is called when the service plugin is ready to start working
-func (ds *DCOSStatsd) Start(acc telegraf.Accumulator) error {
+func (ds *MesosStatsd) Start(acc telegraf.Accumulator) error {
 	// if ds.containers was not properly initiated, we can have issues with
 	// assignment to null map
 	if ds.containers == nil {
@@ -93,7 +93,7 @@ func (ds *DCOSStatsd) Start(acc telegraf.Accumulator) error {
 	go func() {
 		if strings.Contains(ds.Listen, ":") {
 			err := ds.apiServer.ListenAndServe()
-			log.Printf("I! dcos_statsd API server closed: %s", err)
+			log.Printf("I! mesos_statsd API server closed: %s", err)
 		} else {
 			ln, err := net.Listen("unix", ds.Listen)
 			if err != nil {
@@ -105,23 +105,23 @@ func (ds *DCOSStatsd) Start(acc telegraf.Accumulator) error {
 			defer func() {
 				if r := recover(); r != nil {
 					ds.Stop()
-					log.Fatalf("dcos_statsd API server crashed unrecoverably: %v", r)
+					log.Fatalf("mesos_statsd API server crashed unrecoverably: %v", r)
 				}
 			}()
 
 			err = ds.apiServer.Serve(ln)
-			log.Printf("I! dcos_statsd API server closed: %s", err)
+			log.Printf("I! mesos_statsd API server closed: %s", err)
 		}
 
 	}()
-	log.Printf("I! dcos_statsd API server listening on %s", ds.Listen)
+	log.Printf("I! mesos_statsd API server listening on %s", ds.Listen)
 
 	return nil
 }
 
 // Gather takes in an accumulator and adds the metrics that the plugin gathers.
 // It is invoked on a schedule (default every 10s) by the telegraf runtime.
-func (ds *DCOSStatsd) Gather(acc telegraf.Accumulator) error {
+func (ds *MesosStatsd) Gather(acc telegraf.Accumulator) error {
 	var wg sync.WaitGroup
 
 	ds.rwmu.RLock()
@@ -143,7 +143,7 @@ func (ds *DCOSStatsd) Gather(acc telegraf.Accumulator) error {
 }
 
 // Stop is called when the service plugin needs to stop working
-func (ds *DCOSStatsd) Stop() {
+func (ds *MesosStatsd) Stop() {
 	ctx, cancel := context.WithTimeout(context.Background(), ds.Timeout.Duration)
 	defer cancel()
 	ds.apiServer.Shutdown(ctx)
@@ -156,7 +156,7 @@ func (ds *DCOSStatsd) Stop() {
 }
 
 // ListContainers returns a list of known containers
-func (ds *DCOSStatsd) ListContainers() []containers.Container {
+func (ds *MesosStatsd) ListContainers() []containers.Container {
 	ctrs := []containers.Container{}
 	for _, c := range ds.containers {
 		ctrs = append(ctrs, c)
@@ -165,7 +165,7 @@ func (ds *DCOSStatsd) ListContainers() []containers.Container {
 }
 
 // GetContainer returns a container from its ID, and whether it was successful
-func (ds *DCOSStatsd) GetContainer(cid string) (*containers.Container, bool) {
+func (ds *MesosStatsd) GetContainer(cid string) (*containers.Container, bool) {
 	ds.rwmu.RLock()
 	ctr, ok := ds.containers[cid]
 	ds.rwmu.RUnlock()
@@ -180,7 +180,7 @@ func (ds *DCOSStatsd) GetContainer(cid string) (*containers.Container, bool) {
 // not defined, it wil attempt to start a server on a random port and the
 // default host. If this fails, it will error and the container will not be
 // added. If the operation was successful, it will return the container.
-func (ds *DCOSStatsd) AddContainer(ctr containers.Container) (*containers.Container, error) {
+func (ds *MesosStatsd) AddContainer(ctr containers.Container) (*containers.Container, error) {
 	ctr.Server = &statsd.Statsd{
 		Protocol:               "udp",
 		ServiceAddress:         fmt.Sprintf(":%d", ctr.StatsdPort),
@@ -241,7 +241,7 @@ func (ds *DCOSStatsd) AddContainer(ctr containers.Container) (*containers.Contai
 
 // Remove container will remove a container and stop any associated server. the
 // host and port need not be present in the container argument.
-func (ds *DCOSStatsd) RemoveContainer(c containers.Container) error {
+func (ds *MesosStatsd) RemoveContainer(c containers.Container) error {
 	ctr, ok := ds.GetContainer(c.Id)
 	if !ok {
 		return fmt.Errorf("container %s not found", c.Id)
@@ -263,7 +263,7 @@ func (ds *DCOSStatsd) RemoveContainer(c containers.Container) error {
 }
 
 // loadContainers loads containers from disk
-func (ds *DCOSStatsd) loadContainers() error {
+func (ds *MesosStatsd) loadContainers() error {
 	files, err := ioutil.ReadDir(ds.ContainersDir)
 	if err != nil {
 		log.Printf("E! The specified containers dir was not available: %s", err)
@@ -331,9 +331,9 @@ func checkPort(port int) bool {
 }
 
 func init() {
-	inputs.Add("dcos_statsd", func() telegraf.Input {
-		return &DCOSStatsd{
-			ContainersDir: "/run/dcos/telegraf/dcos_statsd/containers",
+	inputs.Add("mesos_statsd", func() telegraf.Input {
+		return &MesosStatsd{
+			ContainersDir: "/run/telegraf/mesos_statsd/containers",
 			Timeout:       internal.Duration{Duration: 10 * time.Second},
 			StatsdHost:    "198.51.100.1",
 			containers:    map[string]containers.Container{},

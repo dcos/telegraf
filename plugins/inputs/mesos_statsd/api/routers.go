@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
-	"github.com/influxdata/telegraf/plugins/inputs/dcos_statsd/containers"
+	"github.com/influxdata/telegraf/plugins/inputs/mesos_statsd/containers"
 )
 
 type Route struct {

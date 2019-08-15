@@ -26,15 +26,15 @@ Sample marathon app configuration:
 ### Configuration:
 
 This section contains the default TOML to configure the plugin.  You can
-generate it using `telegraf --usage dcos_statsd`.
+generate it using `telegraf --usage mesos_statsd`.
 
 ```toml
 # Telegraf plugin for gathering metrics from mesos tasks
-[[inputs.dcos_statsd]]
+[[inputs.mesos_statsd]]
   ## The address on which the command API should listen
   listen = "localhost:8888"
   ## The directory in which container information is persisted
-  containers_dir = "/run/dcos/mesos/isolators/com_mesosphere_MetricsIsolatorModule/containers"
+  containers_dir = "/run/telegraf/mesos_statsd/containers"
   ## The period after which requests to the API should time out
   timeout = "15s"
   ## The hostname or IP address on which to host statsd servers
@@ -60,8 +60,8 @@ All metrics have the following tags:
 
 <!-- TODO: expand with all metrics -->
 ```
-$ telegraf --config dcos.conf --input-filter dcos_statsd --test
-* Plugin: dcos_statsd
+$ telegraf --config dcos.conf --input-filter mesos_statsd --test
+* Plugin: mesos_statsd
   cpus,host=172.17.8.102,container_id=12377985-615c-4a1a-a491-721ce7cd807,metrics_type=counter
   database.rows.written=12345,database.iops=100 1453831884664956455
 ```

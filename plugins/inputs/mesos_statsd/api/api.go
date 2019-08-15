@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/influxdata/telegraf/plugins/inputs/dcos_statsd/containers"
+	"github.com/influxdata/telegraf/plugins/inputs/mesos_statsd/containers"
 )
 
 // ReportHealth returns 200 OK if the API server is online

@@ -1,4 +1,4 @@
-package dcos_statsd
+package mesos_statsd
 
 import (
 	"bytes"
@@ -14,14 +14,14 @@ import (
 	"time"
 
 	"github.com/influxdata/telegraf"
-	"github.com/influxdata/telegraf/plugins/inputs/dcos_statsd/containers"
+	"github.com/influxdata/telegraf/plugins/inputs/mesos_statsd/containers"
 	"github.com/influxdata/telegraf/testutil"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestStart(t *testing.T) {
 	t.Run("Server with no saved state", func(t *testing.T) {
-		ds := DCOSStatsd{}
+		ds := MesosStatsd{}
 		// startTestServer runs a /health request test
 		addr := startTestServer(t, &ds)
 		defer ds.Stop()
@@ -51,8 +51,8 @@ func TestStart(t *testing.T) {
 			assert.Fail(t, fmt.Sprintf("Could not write container state: %s", err))
 		}
 
-		// Finally run DCOSStatsd.Start():
-		ds := DCOSStatsd{ContainersDir: dir}
+		// Finally run MesosStatsd.Start():
+		ds := MesosStatsd{ContainersDir: dir}
 		addr := startTestServer(t, &ds)
 		defer ds.Stop()
 
@@ -66,7 +66,7 @@ func TestStart(t *testing.T) {
 
 func TestStop(t *testing.T) {
 	t.Run("Server with no containers", func(t *testing.T) {
-		ds := DCOSStatsd{}
+		ds := MesosStatsd{}
 		addr := startTestServer(t, &ds)
 		ds.Stop()
 
@@ -77,7 +77,7 @@ func TestStop(t *testing.T) {
 	})
 
 	t.Run("Server with a container", func(t *testing.T) {
-		ds := DCOSStatsd{}
+		ds := MesosStatsd{}
 		addr := startTestServer(t, &ds)
 
 		port := findFreePort()
@@ -107,7 +107,7 @@ func TestGather(t *testing.T) {
 		assert.Fail(t, fmt.Sprintf("Could not create temp dir: %s", err))
 	}
 	defer os.RemoveAll(dir)
-	ds := DCOSStatsd{StatsdHost: "127.0.0.1", ContainersDir: dir}
+	ds := MesosStatsd{StatsdHost: "127.0.0.1", ContainersDir: dir}
 
 	addr := startTestServer(t, &ds)
 	defer ds.Stop()
@@ -191,11 +191,11 @@ func TestGather(t *testing.T) {
 
 }
 
-// startTestServer starts a server on the specified DCOSStatsd on a randomly
+// startTestServer starts a server on the specified MesosStatsd on a randomly
 // selected port and returns the address on which it will be served. It also
 // runs a test against the /health endpoint to ensure that the command API is
 // ready.
-func startTestServer(t *testing.T, ds *DCOSStatsd) string {
+func startTestServer(t *testing.T, ds *MesosStatsd) string {
 	port := findFreePort()
 	ds.Listen = fmt.Sprintf(":%d", port)
 	addr := fmt.Sprintf("http://localhost:%d", port)

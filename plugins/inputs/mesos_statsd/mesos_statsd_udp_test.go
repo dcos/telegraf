@@ -3,7 +3,7 @@
 // This file therefore holds valuable tests which can't pass on CI. They can be
 // invoked via `go test -tags udp .`
 
-package dcos_statsd
+package mesos_statsd
 
 import (
 	"bytes"
@@ -24,7 +24,7 @@ func TestGatherUDP(t *testing.T) {
 		assert.Fail(t, fmt.Sprintf("Could not create temp dir: %s", err))
 	}
 	defer os.RemoveAll(dir)
-	ds := DCOSStatsd{StatsdHost: "127.0.0.1", ContainersDir: dir}
+	ds := MesosStatsd{StatsdHost: "127.0.0.1", ContainersDir: dir}
 
 	addr := startTestServer(t, &ds)
 	defer ds.Stop()
