@@ -2,6 +2,8 @@
 
 The DC/OS Metrics output provides a [DC/OS Metrics API](https://docs.mesosphere.com/1.11/metrics/metrics-api/) server that exposes metrics collected by Telegraf.
 
+This plugin is not supported on Windows. If enabled on Windows, it will do nothing.
+
 ### Configuration:
 
 ```toml

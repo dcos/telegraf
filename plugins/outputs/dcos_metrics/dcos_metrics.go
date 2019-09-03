@@ -1,3 +1,5 @@
+// +build !windows
+
 package dcos_metrics
 
 import (
