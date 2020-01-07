@@ -44,6 +44,8 @@ generate it using `telegraf --usage dcos_statsd`.
   timeout = "15s"
   ## The hostname or IP address on which to host statsd servers
   statsd_host = "198.51.100.1"
+  ## The number of pending messages each statsd server can hold (default 10000)
+  #allowed_pending_messages = 10000
 ```
 
 With minimal configuration, this plugin expects the cluster to be in permissive mode. Strict mode requires TLS 

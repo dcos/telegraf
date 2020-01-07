@@ -36,6 +36,8 @@ containers_dir = "/run/dcos/telegraf/dcos_statsd/containers"
 timeout = "15s"
 ## The hostname or IP address on which to host statsd servers
 statsd_host = "198.51.100.1"
+## The number of pending messages each statsd server can hold
+allowed_pending_messages = 10000
 `
 
 type DCOSStatsd struct {
@@ -44,12 +46,13 @@ type DCOSStatsd struct {
 	Listen            string
 	SystemdSocketName string
 	// ContainersDir is the directory in which container information is stored
-	ContainersDir string
-	Timeout       internal.Duration
-	StatsdHost    string
-	apiServer     *http.Server
-	containers    map[string]containers.Container
-	rwmu          sync.RWMutex
+	ContainersDir          string
+	Timeout                internal.Duration
+	StatsdHost             string
+	AllowedPendingMessages int
+	apiServer              *http.Server
+	containers             map[string]containers.Container
+	rwmu                   sync.RWMutex
 }
 
 // SampleConfig returns the default configuration
@@ -75,6 +78,11 @@ func (ds *DCOSStatsd) Start(acc telegraf.Accumulator) error {
 		Addr:         ds.Listen,
 		WriteTimeout: ds.Timeout.Duration,
 		ReadTimeout:  ds.Timeout.Duration,
+	}
+
+	// default to 10,000 allowed pending messages per statsd server
+	if ds.AllowedPendingMessages == 0 {
+		ds.AllowedPendingMessages = 10000
 	}
 
 	if ds.ContainersDir != "" {
@@ -209,7 +217,7 @@ func (ds *DCOSStatsd) AddContainer(ctr containers.Container) (*containers.Contai
 		Protocol:               "udp",
 		ServiceAddress:         fmt.Sprintf(":%d", ctr.StatsdPort),
 		ParseDataDogTags:       true,
-		AllowedPendingMessages: 10000,
+		AllowedPendingMessages: ds.AllowedPendingMessages,
 		MetricSeparator:        ".",
 	}
 

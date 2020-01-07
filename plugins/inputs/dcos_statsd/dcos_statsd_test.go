@@ -107,7 +107,7 @@ func TestGather(t *testing.T) {
 		assert.Fail(t, fmt.Sprintf("Could not create temp dir: %s", err))
 	}
 	defer os.RemoveAll(dir)
-	ds := DCOSStatsd{StatsdHost: "127.0.0.1", ContainersDir: dir}
+	ds := DCOSStatsd{StatsdHost: "127.0.0.1", ContainersDir: dir, AllowedPendingMessages: 321}
 
 	addr := startTestServer(t, &ds)
 	defer ds.Stop()
@@ -122,6 +122,11 @@ func TestGather(t *testing.T) {
 	assert.Equal(t, "abc123", abc.Id)
 	assert.NotEmpty(t, abc.StatsdHost)
 	assert.NotEmpty(t, abc.StatsdPort)
+	// the container json object does not serialize its internals, hence we
+	// retrieve it directly from the DCOSStatsd object
+	ctr := ds.containers["abc123"]
+	assert.NotNil(t, ctr)
+	assert.Equal(t, 321, ctr.Server.AllowedPendingMessages)
 
 	t.Log("A container on a known port")
 	xyzport := findFreePort()
