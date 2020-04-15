@@ -152,23 +152,66 @@ func TestPrometheusGathersMesosMetrics(t *testing.T) {
 			},
 		},
 		"networkModes": {
-			// Host mode should use hostname:port
-			"http://127.0.0.1:7070/metrics": {
-				URL:         unsafelyParse("http://127.0.0.1:7070/metrics"),
-				OriginalURL: unsafelyParse("http://127.0.0.1:7070/metrics"),
-				Tags:        map[string]string{"container_id": "host-123"},
+			"http://127.0.0.1:85254/metrics": {
+				URL:         unsafelyParse("http://127.0.0.1:85254/metrics"),
+				OriginalURL: unsafelyParse("http://127.0.0.1:85254/metrics"),
+				Tags:        map[string]string{"container_id": "mapped-pod-labeled-container-id"},
+			},
+			"http://127.0.0.1:25854/metrics": {
+				URL:         unsafelyParse("http://127.0.0.1:25854/metrics"),
+				OriginalURL: unsafelyParse("http://127.0.0.1:25854/metrics"),
+				Tags:        map[string]string{"container_id": "mapped-pod-container-id"},
 			},
 			// Bridge mode should use hostname:mapped-port (not hostname:container-port)
-			"http://127.0.0.1:8080/metrics": {
-				URL:         unsafelyParse("http://127.0.0.1:8080/metrics"),
-				OriginalURL: unsafelyParse("http://127.0.0.1:8080/metrics"),
-				Tags:        map[string]string{"container_id": "bridge-123"},
+			"http://127.0.0.1:10388/metrics": {
+				URL:         unsafelyParse("http://127.0.0.1:10388/metrics"),
+				OriginalURL: unsafelyParse("http://127.0.0.1:10388/metrics"),
+				Tags:        map[string]string{"container_id": "host-docker-container-id"},
 			},
-			// Container mode should use task-ip:container-port
-			"http://198.0.2.3:9090/metrics": {
-				URL:         unsafelyParse("http://198.0.2.3:9090/metrics"),
-				OriginalURL: unsafelyParse("http://198.0.2.3:9090/metrics"),
-				Tags:        map[string]string{"container_id": "container-123"},
+			"http://127.0.0.1:8486/metrics": {
+				URL:         unsafelyParse("http://127.0.0.1:8486/metrics"),
+				OriginalURL: unsafelyParse("http://127.0.0.1:8486/metrics"),
+				Tags:        map[string]string{"container_id": "host-mesos-container-id"},
+			},
+			"http://9.0.4.4:85254/metrics": {
+				URL:         unsafelyParse("http://9.0.4.4:85254/metrics"),
+				OriginalURL: unsafelyParse("http://9.0.4.4:85254/metrics"),
+				Tags:        map[string]string{"container_id": "mixed-pod-labeled-container-id"},
+			},
+			"http://9.0.4.3:85254/metrics": {
+				URL:         unsafelyParse("http://9.0.4.3:85254/metrics"),
+				OriginalURL: unsafelyParse("http://9.0.4.3:85254/metrics"),
+				Tags:        map[string]string{"container_id": "mixed-pod-container-id"},
+			},
+			"http://9.0.3.9:85254/metrics": {
+				URL:         unsafelyParse("http://9.0.3.9:85254/metrics"),
+				OriginalURL: unsafelyParse("http://9.0.3.9:85254/metrics"),
+				Tags:        map[string]string{"container_id": "mixed-mesos-container-id"},
+			},
+			"http://9.0.4.9:85254/metrics": {
+				URL:         unsafelyParse("http://9.0.4.9:85254/metrics"),
+				OriginalURL: unsafelyParse("http://9.0.4.9:85254/metrics"),
+				Tags:        map[string]string{"container_id": "mixed-mesos-labeled-container-id"},
+			},
+			"http://9.0.2.3:85254/metrics": {
+				URL:         unsafelyParse("http://9.0.2.3:85254/metrics"),
+				OriginalURL: unsafelyParse("http://9.0.2.3:85254/metrics"),
+				Tags:        map[string]string{"container_id": "container-pod-container-id"},
+			},
+			"http://9.0.2.4:85254/metrics": {
+				URL:         unsafelyParse("http://9.0.2.4:85254/metrics"),
+				OriginalURL: unsafelyParse("http://9.0.2.4:85254/metrics"),
+				Tags:        map[string]string{"container_id": "container-pod-labeled-container-id"},
+			},
+			"http://9.0.0.0:85254/metrics": {
+				URL:         unsafelyParse("http://9.0.0.0:85254/metrics"),
+				OriginalURL: unsafelyParse("http://9.0.0.0:85254/metrics"),
+				Tags:        map[string]string{"container_id": "container-mesos-container-id"},
+			},
+			"http://9.0.0.1:85254/metrics": {
+				URL:         unsafelyParse("http://9.0.0.1:85254/metrics"),
+				OriginalURL: unsafelyParse("http://9.0.0.1:85254/metrics"),
+				Tags:        map[string]string{"container_id": "container-mesos-labeled-container-id"},
 			},
 		},
 	}
