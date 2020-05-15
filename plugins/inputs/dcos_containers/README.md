@@ -34,6 +34,7 @@ generate it using `telegraf --usage dcos_containers`.
      - user_time_secs
      - system_time_secs
      - limit
+     - soft_limit
      - nr_periods
      - nr_throttled
      - throttled_time_secs

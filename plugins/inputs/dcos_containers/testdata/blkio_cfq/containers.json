@@ -15,6 +15,7 @@
         "executor_name": "executor",
         "resource_statistics": {
           "cpus_limit": 8.25,
+          "cpus_soft_limit": 4.25,
           "cpus_nr_periods": 769021,
           "cpus_nr_throttled": 1046,
           "cpus_system_time_secs": 34501.45,

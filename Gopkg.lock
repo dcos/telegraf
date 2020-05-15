@@ -770,8 +770,8 @@
     "api/v1/lib/roles",
   ]
   pruneopts = ""
-  revision = "7ec2a64a36fe5bc22d3701558bc9aa1ac6acfac5"
-  version = "v0.0.8"
+  revision = "de775c0c58642395394de8e54c6677063cfe3b1f"
+  version = "v0.0.11"
 
 [[projects]]
   digest = "1:f0bad0fece0fb73c6ea249c18d8e80ffbe86be0457715b04463068f04686cf39"

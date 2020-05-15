@@ -196,6 +196,7 @@ func cMeasurements(c agent.Response_GetContainers_Container) []measurement {
 	warnIfNotSet(setIfNotNil(cpus.fields, "user_time_secs", rs.GetCPUsUserTimeSecs))
 	warnIfNotSet(setIfNotNil(cpus.fields, "system_time_secs", rs.GetCPUsSystemTimeSecs))
 	warnIfNotSet(setIfNotNil(cpus.fields, "limit", rs.GetCPUsLimit))
+	warnIfNotSet(setIfNotNil(cpus.fields, "soft_limit", rs.GetCPUsSoftLimit))
 	warnIfNotSet(setIfNotNil(cpus.fields, "nr_periods", rs.GetCPUsNrPeriods))
 	warnIfNotSet(setIfNotNil(cpus.fields, "nr_throttled", rs.GetCPUsNrThrottled))
 	warnIfNotSet(setIfNotNil(cpus.fields, "throttled_time_secs", rs.GetCPUsThrottledTimeSecs))
