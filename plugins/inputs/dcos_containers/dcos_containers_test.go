@@ -32,6 +32,7 @@ var (
 			measurements: map[string]map[string]interface{}{
 				"cpus": {
 					"limit":               8.25,
+					"soft_limit":          4.25,
 					"nr_periods":          uint32(769021),
 					"nr_throttled":        uint32(1046),
 					"system_time_secs":    34501.45,
