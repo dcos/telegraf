@@ -608,15 +608,76 @@ func getPortsFromTask(t *mesos.Task) []mesos.Port {
 // and set to container, it returns the task's IP address. If absent, or set to
 // host, it returns the node's hostname.
 func getHostnameForPort(p *mesos.Port, t *mesos.Task, nodeHostname string) (string, error) {
-	portLabels := simplifyLabels(p.GetLabels())
-	if portLabels["network-scope"] == "container" {
+	if !isHostPort(p, t) {
 		taskIP, err := getTaskIP(t.GetStatuses())
 		if err != nil {
 			return nodeHostname, fmt.Errorf("could not retrieve IP address for %s: %s", t.GetTaskID(), err)
 		}
 		return taskIP, nil
+
 	}
+
 	return nodeHostname, nil
+}
+
+func isHostPort(p *mesos.Port, t *mesos.Task) bool {
+
+	// Handle network scope label
+	portLabels := simplifyLabels(p.GetLabels())
+	if s, ok := portLabels["network-scope"]; ok {
+		if s == "host" {
+			return true
+		}
+
+		return false
+	}
+
+	// Handle task resources
+	for _, r := range t.GetResources() {
+		if n := r.GetName(); n == "ports" {
+			for _, pr := range r.GetRanges().GetRange() {
+				if pr.GetBegin() <= uint64(p.Number) && pr.GetEnd() >= uint64(p.Number) {
+					return true
+				}
+			}
+
+			if r.GetScalar().GetValue() == float64(p.Number) {
+				return true
+			}
+		}
+	}
+
+	// Handle Pod portmappings
+	for _, s := range t.GetStatuses() {
+		for _, ni := range s.GetContainerStatus().GetNetworkInfos() {
+			for _, pm := range ni.GetPortMappings() {
+				if h := pm.GetHostPort(); h == p.Number {
+					return true
+				}
+			}
+		}
+	}
+
+	// Handle MESOS and Docker portmappings
+	if c := t.GetContainer(); c != nil {
+		for _, ni := range c.GetNetworkInfos() {
+			for _, pm := range ni.GetPortMappings() {
+				if h := pm.GetHostPort(); h == p.Number {
+					return true
+				}
+			}
+		}
+
+		if d := c.GetDocker(); d != nil {
+			for _, pm := range d.GetPortMappings() {
+				if h := pm.GetHostPort(); h == p.Number {
+					return true
+				}
+			}
+		}
+	}
+
+	return false
 }
 
 // getContainerIDs retrieves the container ID and the parent container ID of a
